@@ -1,0 +1,7 @@
+Flask
+flask-cors
+flask-wtf
+paho-mqtt>=1.6.1
+python-dateutil
+requests
+flake8
