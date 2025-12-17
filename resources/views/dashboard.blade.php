@@ -103,7 +103,7 @@
                                 id="targetInput"
                                 placeholder="192.168.100.0/24 or 192.168.100.10"
                                 class="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
-                                value="192.168.100.56"
+                                value=""
                             />
                             <button
                                 id="startScanBtn"

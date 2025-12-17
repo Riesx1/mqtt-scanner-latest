@@ -16,20 +16,14 @@
                 </h1>
 
                 <div class="flex gap-4 justify-center mb-12">
-                    @auth
-                        <a href="{{ url('/dashboard') }}" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                            Go to Dashboard
+                    <a href="{{ route('login') }}" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        Log in
+                    </a>
+                    @if (Route::has('register'))
+                        <a href="{{ route('register') }}" class="px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition">
+                            Register
                         </a>
-                    @else
-                        <a href="{{ route('login') }}" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                            Log in
-                        </a>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}" class="px-6 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition">
-                                Register
-                            </a>
-                        @endif
-                    @endauth
+                    @endif
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">

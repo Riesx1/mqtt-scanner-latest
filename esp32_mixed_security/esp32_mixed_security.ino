@@ -19,13 +19,13 @@
 // ============================================================================
 // WIFI CONFIG
 // ============================================================================
-const char *ssid = "ZurKun-TIME-2.4GHZ";
-const char *password = "Rumahroboh123";
+const char *ssid = "Galaxy A51";
+const char *password = "faris172";
 
 // ============================================================================
 // MQTT BROKER CONFIG
 // ============================================================================
-const char *mqtt_server = "192.168.100.56";
+const char *mqtt_server = "10.80.192.37";
 
 // SECURE Connection (for DHT and LDR)
 const uint16_t mqtt_port_secure = 8883;
