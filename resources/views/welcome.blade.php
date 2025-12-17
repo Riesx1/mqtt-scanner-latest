@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>MQTT Scanner - Security Analysis Tool</title>
-    <link rel="stylesheet" href="{{ asset('build/assets/app-B9_VhGab.css') }}">
-    <script type="module" src="{{ asset('build/assets/app-CvgioS1y.js') }}"></script>
+    <link rel="stylesheet" href="{{ asset('build/assets/app-Cj2OKJ06.css') }}">
+    <script type="module" src="{{ asset('build/assets/app-CPn3ZzSV.js') }}"></script>
 </head>
 <body class="antialiased bg-gray-900">
     <div class="relative min-h-screen flex items-center justify-center">

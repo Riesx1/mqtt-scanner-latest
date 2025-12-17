@@ -21,25 +21,27 @@ class SecurityHeaders
         $isLocal = app()->environment(['local', 'development']);
 
         if ($isLocal) {
-        // Dev CSP, keep UI working
-        $csp = "default-src 'self'; "
-             . "base-uri 'self'; "
-             . "object-src 'none'; "
-             . "frame-ancestors 'none'; "
-             . "img-src 'self' data:; "
-             . "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-             . "style-src 'self' 'unsafe-inline'; "
-             . "connect-src 'self';";
+            // Dev CSP, keep UI working
+            $csp = "default-src 'self'; "
+                . "base-uri 'self'; "
+                . "object-src 'none'; "
+                . "frame-ancestors 'none'; "
+                . "img-src 'self' data:; "
+                . "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                . "style-src 'self' 'unsafe-inline' https://fonts.bunny.net; "
+                . "font-src 'self' https://fonts.bunny.net; "
+                . "connect-src 'self';";
         } else {
-        // Prod CSP, stricter
-        $csp = "default-src 'self'; "
-            . "base-uri 'self'; "
-            . "object-src 'none'; "
-            . "frame-ancestors 'none'; "
-            . "img-src 'self' data:; "
-            . "script-src 'self'; "
-            . "style-src 'self'; "
-            . "connect-src 'self';";
+            // Prod CSP, stricter
+            $csp = "default-src 'self'; "
+                . "base-uri 'self'; "
+                . "object-src 'none'; "
+                . "frame-ancestors 'none'; "
+                . "img-src 'self' data:; "
+                . "script-src 'self'; "
+                . "style-src 'self' 'unsafe-inline' https://fonts.bunny.net; "
+                . "font-src 'self' https://fonts.bunny.net; "
+                . "connect-src 'self';";
         }
 
         $response->headers->set('Content-Security-Policy', $csp);

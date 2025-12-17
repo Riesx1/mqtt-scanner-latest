@@ -64,8 +64,7 @@ class RegisteredUserController extends Controller
             // Continue with registration even if MQTT fails
         }
 
-        Auth::login($user);
-
-        return redirect(route('dashboard', absolute: false));
+        // Redirect to login page with success message instead of auto-login
+        return redirect()->route('login')->with('status', 'Registration successful! Please log in with your credentials.');
     }
 }

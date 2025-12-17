@@ -6,11 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>MQTT Scanner Tool</title>
 
-    <link rel="stylesheet" href="{{ asset('build/assets/app-B9_VhGab.css') }}">
-    <script type="module" src="{{ asset('build/assets/app-CvgioS1y.js') }}"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="{{ asset('build/assets/app-Cj2OKJ06.css') }}">
+    <script type="module" src="{{ asset('build/assets/app-CPn3ZzSV.js') }}"></script>
 </head>
 <body class="bg-gray-900 min-h-screen text-gray-100">
     <!-- Navigation Bar -->
@@ -1281,13 +1278,24 @@
 
         // Download PDF
         function downloadPDF() {
+            console.log('downloadPDF function called');
+
             if (!globalSensors || globalSensors.length === 0) {
                 alert('No scan results to download');
                 return;
             }
 
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+            // Check if jsPDF is available
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                console.error('jsPDF not loaded');
+                alert('PDF library not loaded. Please refresh the page and try again.');
+                return;
+            }
+
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                console.log('jsPDF instance created');
             const pageWidth = doc.internal.pageSize.getWidth();
 
             // --- Header ---
@@ -1394,7 +1402,8 @@
                 ];
             });
 
-            doc.autoTable({
+            // Use autoTable as a standalone function
+            window.autoTable(doc, {
                 head: [['Target', 'Security', 'Sensor Type', 'Latest Reading', 'Status']],
                 body: tableData,
                 startY: yPos,
@@ -1527,7 +1536,12 @@
 
             const sequence = String(count).padStart(3, '0');
 
-            doc.save(`mqtt_scan_report_${sequence}.pdf`);
+                doc.save(`mqtt_scan_report_${sequence}.pdf`);
+                console.log('PDF downloaded successfully');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Error generating PDF: ' + error.message);
+            }
         }
 
         // Event listeners

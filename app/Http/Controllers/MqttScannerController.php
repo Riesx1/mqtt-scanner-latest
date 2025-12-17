@@ -21,13 +21,42 @@ class MqttScannerController extends Controller
     // Laravel server-side endpoint: calls Flask /api/scan
     public function scan(Request $request)
     {
-        $target = $request->input('target', '127.0.0.1');
-        $creds = $request->input('creds', null); // optional array {user, pass}
+        // Validate input to prevent injection attacks
+        $validated = $request->validate([
+            'target' => ['required', 'string', 'max:100', 'regex:/^[0-9\.\/:a-zA-Z\-]+$/'],
+            'creds' => ['nullable', 'array'],
+            'creds.user' => ['nullable', 'string', 'max:255'],
+            'creds.pass' => ['nullable', 'string', 'max:255'],
+        ], [
+            'target.required' => 'Target IP or range is required.',
+            'target.regex' => 'Invalid target format. Only IP addresses and CIDR ranges are allowed.',
+        ]);
+
+        $target = $validated['target'];
+        $creds = $validated['creds'] ?? null;
+
+        // Rate limiting: 10 scans per minute per user
+        $key = 'mqtt_scan:' . auth()->id();
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($key, 10)) {
+            return response()->json([
+                'error' => 'Too many scan requests. Please wait before scanning again.'
+            ], 429);
+        }
+        \Illuminate\Support\Facades\RateLimiter::hit($key, 60);
 
         $flaskBase = env('FLASK_BASE', 'http://127.0.0.1:5000');
         $apiKey = env('FLASK_API_KEY', 'my-very-secret-flask-key-CHANGEME');
 
         try {
+            // Log scan activity
+            Log::info('MQTT scan initiated', [
+                'user_id' => auth()->id(),
+                'user_email' => auth()->user()->email,
+                'target' => $target,
+                'ip_address' => $request->ip(),
+                'timestamp' => now()
+            ]);
+
             // Add 30 second timeout for scan operations
             $response = Http::timeout(30)->withHeaders([
                 'X-API-KEY' => $apiKey,
@@ -39,7 +68,12 @@ class MqttScannerController extends Controller
             return response($response->body(), $response->status())
                 ->header('Content-Type', $response->header('Content-Type', 'application/json'));
         } catch (\Exception $e) {
-            Log::error('MQTT Scan error: ' . $e->getMessage());
+            Log::error('MQTT Scan error', [
+                'user_id' => auth()->id(),
+                'target' => $target,
+                'error' => $e->getMessage(),
+                'ip_address' => $request->ip()
+            ]);
             return response()->json(['error' => 'Failed to reach scanner: ' . $e->getMessage()], 500);
         }
     }

@@ -56,9 +56,29 @@ class LoginRequest extends FormRequest
         if (!Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
-            throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
-            ]);
+            // Check if email exists to show more specific error
+            $user = \App\Models\User::where('email', $this->email)->first();
+
+            if ($user) {
+                // Email exists but password is wrong
+                $attempts = RateLimiter::attempts($this->throttleKey());
+                $remaining = 5 - $attempts;
+
+                if ($remaining > 0) {
+                    throw ValidationException::withMessages([
+                        'password' => "Incorrect password. You have {$remaining} attempt(s) remaining.",
+                    ]);
+                } else {
+                    throw ValidationException::withMessages([
+                        'password' => 'Too many failed login attempts. Please try again later.',
+                    ]);
+                }
+            } else {
+                // Email doesn't exist
+                throw ValidationException::withMessages([
+                    'email' => 'No account found with this email address.',
+                ]);
+            }
         }
 
         RateLimiter::clear($this->throttleKey());
@@ -80,10 +100,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'password' => "Too many login attempts. Please try again in " . ceil($seconds / 60) . " minute(s).",
         ]);
     }
 
