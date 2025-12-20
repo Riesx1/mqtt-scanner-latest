@@ -208,7 +208,12 @@ def try_mqtt_connect(host, port, use_tls=False, username=None, password=None, wa
         def on_connect(c, userdata, flags, rc, properties=None):
             nonlocal connected, last_rc, connect_error
             last_rc = rc
-            if rc == 0:
+            # Handle both numeric and string return codes (paho-mqtt v1 vs v2)
+            rc_value = rc if isinstance(rc, int) else str(rc)
+            is_success = (rc == 0 or rc_value == 0 or str(rc_value).lower() == "success")
+            is_auth_failure = (rc == 5 or rc_value == 5 or "not authorized" in str(rc_value).lower() or "authoris" in str(rc_value).lower())
+
+            if is_success:
                 connected = True
                 # Check if anonymous connection succeeded
                 if username is None:
@@ -234,9 +239,9 @@ def try_mqtt_connect(host, port, use_tls=False, username=None, password=None, wa
                     logger.error(f"[{host}:{port}] Error subscribing: {sub_e}")
             else:
                 connect_error = f"Connection failed with code {rc}"
-                if rc == 5:
+                if is_auth_failure:
                     result['security_assessment']['requires_auth'] = True
-                    logger.info(f"[{host}:{port}] Authentication required (rc=5)")
+                    logger.info(f"[{host}:{port}] Authentication required (rc={rc})")
 
         def on_message(c, userdata, msg):
             nonlocal sys_clients_detected
@@ -353,8 +358,11 @@ def try_mqtt_connect(host, port, use_tls=False, username=None, password=None, wa
             if connect_error:
                 result['result'] += f' ({connect_error})'
             if last_rc is not None:
-                # result['result'] += f' (rc={last_rc})' # Already included in connect_error if applicable
-                result['classification'] = 'not_authorized' if last_rc == 5 else 'not_authorized_or_unreachable'
+                # Handle both numeric and string return codes
+                rc_value = last_rc if isinstance(last_rc, int) else str(last_rc)
+                is_auth_failure = (last_rc == 5 or rc_value == 5 or "not authorized" in str(rc_value).lower() or "authoris" in str(rc_value).lower())
+
+                result['classification'] = 'not_authorized' if is_auth_failure else 'not_authorized_or_unreachable'
             else:
                  result['classification'] = 'connect_timeout_or_unreachable' # More specific if no RC received
 
