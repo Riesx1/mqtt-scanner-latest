@@ -160,14 +160,14 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                                 <div class="text-sm text-gray-300">
-                                    <strong>Authentication:</strong> Leave credentials empty to scan insecure (anonymous) brokers only.
-                                    Enter username/password to access secure brokers requiring authentication.
+                                    Leave credentials empty to scan insecure (anonymous) brokers only.
+                                    Enter Email/Password to access secure brokers requiring authentication.
                                 </div>
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label for="scanUsername" class="block text-xs font-medium text-gray-400 mb-1">
-                                        MQTT Username (Optional)
+                                        Email
                                     </label>
                                     <input
                                         type="text"
@@ -178,7 +178,7 @@
                                 </div>
                                 <div>
                                     <label for="scanPassword" class="block text-xs font-medium text-gray-400 mb-1">
-                                        MQTT Password (Optional)
+                                        Password
                                     </label>
                                     <input
                                         type="password"

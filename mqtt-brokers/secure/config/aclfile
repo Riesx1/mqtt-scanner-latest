@@ -1,0 +1,38 @@
+# ACL (Access Control List) for MQTT Topics
+# Format: user <username>
+#         topic [read|write|readwrite|deny] <topic>
+#
+# Pattern substitutions:
+# %u = username
+# %c = clientid
+
+# Default: deny all (implicit)
+
+# Admin user - full access to everything
+user admin
+topic readwrite #
+topic read $SYS/#
+
+# Faris user - can access all topics for scanning
+user faris02@gmail.com
+topic readwrite sensors/faris/#
+topic read #
+topic read $SYS/#
+
+# ESP32 devices - can only publish to specific sensor topics
+user esp32_sensor_001
+topic write sensors/faris/dht_secure
+topic write sensors/faris/ldr_secure
+topic write sensors/faris/pir_insecure
+
+# Pattern-based access - users can access topics under their username
+pattern readwrite sensors/%u/#
+
+# Read-only monitoring user (if needed)
+user monitor
+topic read sensors/#
+
+# System topics access already granted above to faris02@gmail.com
+
+user esp32_sensor_001
+topic deny $SYS/#

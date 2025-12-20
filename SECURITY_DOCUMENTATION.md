@@ -304,6 +304,9 @@ certfile /mosquitto/certs/server.crt
 keyfile /mosquitto/certs/server.key
 require_certificate false
 persistence true
+
+# ACL disabled - authentication-only model
+# acl_file /mosquitto/config/aclfile
 ```
 
 **Features:**
@@ -313,6 +316,7 @@ persistence true
 -   Anonymous access disabled
 -   Certificate-based encryption
 -   Persistent message storage
+-   **Note:** Topic-level access control (ACL) not implemented - authenticated users can access all topics
 
 **Insecure Broker (Testing Only):**
 
