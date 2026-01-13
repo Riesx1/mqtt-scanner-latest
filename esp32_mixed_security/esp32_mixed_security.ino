@@ -25,7 +25,7 @@ const char *password = "Rumahroboh123";
 // ============================================================================
 // MQTT BROKER CONFIG
 // ============================================================================
-const char *mqtt_server = "192.168.100.56";
+const char *mqtt_server = "192.168.100.57"; // Updated to match PC's WiFi IP
 
 // SECURE Connection (for DHT and LDR)
 const uint16_t mqtt_port_secure = 8883;
@@ -168,28 +168,49 @@ void setup_wifi()
 
 void setup_time()
 {
-    Serial.print("Syncing time with NTP servers");
-    configTime(8 * 3600, 0, "pool.ntp.org", "time.google.com");
+    Serial.println("Syncing time with NTP servers...");
+    Serial.println("  Using: time.google.com, pool.ntp.org, time.nist.gov");
+
+    // GMT+8 timezone (Malaysia), 0 DST offset
+    configTime(8 * 3600, 0, "time.google.com", "pool.ntp.org", "time.nist.gov");
 
     time_t now = time(nullptr);
     int tries = 0;
-    while (now < 24 * 3600 && tries < 120)
+
+    // Wait longer (up to 30 seconds) for time sync
+    while (now < 100000 && tries < 60)
     {
         delay(500);
         Serial.print(".");
         now = time(nullptr);
         tries++;
+
+        // Try to force update every 5 seconds
+        if (tries % 10 == 0 && now < 100000)
+        {
+            Serial.print(" [retry] ");
+            configTime(8 * 3600, 0, "time.google.com", "pool.ntp.org", "time.nist.gov");
+        }
     }
     Serial.println();
 
-    if (now < 24 * 3600)
+    if (now < 100000)
     {
         Serial.println("⚠ Time sync failed - TLS may not work!");
+        Serial.println("  Continuing anyway - you may see TLS errors");
     }
     else
     {
         Serial.print("✓ Time synced: ");
         Serial.println(ctime(&now));
+
+        struct tm timeinfo;
+        if (getLocalTime(&timeinfo))
+        {
+            Serial.printf("  Current time: %04d-%02d-%02d %02d:%02d:%02d\n",
+                          timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+                          timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+        }
     }
 }
 
@@ -202,6 +223,13 @@ void reconnect_secure()
     Serial.printf("  Server: %s:%d\n", mqtt_server, mqtt_port_secure);
     Serial.printf("  User: %s\n", mqtt_user);
 
+    // Check current time for TLS
+    time_t now = time(nullptr);
+    if (now < 100000)
+    {
+        Serial.println("  ⚠ Warning: System time not synced - using insecure TLS");
+    }
+
     String clientId = "esp32-secure-" + String(random(0xffff), HEX);
 
     if (mqttSecure.connect(clientId.c_str(), mqtt_user, mqtt_pass))
@@ -212,6 +240,7 @@ void reconnect_secure()
     else
     {
         printMqttError("SECURE", mqttSecure.state());
+        Serial.println("  → Will retry in next loop iteration");
     }
 }
 

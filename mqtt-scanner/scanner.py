@@ -149,6 +149,80 @@ def analyze_tls_certificate(host, port, timeout=3):
 
     return cert_analysis
 
+def categorize_outcome(result):
+    """
+    Categorize scan results into standard outcome labels with meanings and security implications.
+    Returns a tuple of (outcome_label, meaning, evidence_signal, security_implication)
+    """
+    port = result.get('port')
+    classification = result.get('classification', '')
+    result_status = result.get('result', '')
+    has_tls_analysis = result.get('tls_analysis') and result.get('tls_analysis').get('has_tls')
+    tls_error = result.get('tls_analysis', {}).get('error') if result.get('tls_analysis') else None
+    requires_auth = result.get('security_assessment', {}).get('requires_auth', False)
+
+    # Connected (1883) - plaintext connection
+    if port == 1883 and classification == 'open_or_auth_ok':
+        return (
+            "Connected (1883)",
+            "Broker accepts connection on plaintext port",
+            "Successful MQTT connect on port 1883",
+            "High risk, traffic is unencrypted and may allow eavesdropping"
+        )
+
+    # Connected (8883) - TLS connection
+    if port == 8883 and classification == 'open_or_auth_ok' and has_tls_analysis:
+        return (
+            "Connected (8883)",
+            "Broker accepts connection over TLS",
+            "Successful TLS handshake and MQTT connect",
+            "Potentially safer, must still verify certificate and auth"
+        )
+
+    # Not Authorised / Auth Required
+    if classification == 'not_authorized' or requires_auth:
+        return (
+            "Not Authorised / Auth Required",
+            "Broker rejects anonymous or invalid credentials",
+            "Connection fails with auth response",
+            "Positive security control, authentication is enforced"
+        )
+
+    # TLS Error
+    if classification == 'tls_or_ssl_error' or (tls_error and 'SSL' in str(tls_error)):
+        return (
+            "TLS Error",
+            "TLS handshake fails due to certificate or protocol issues",
+            "SSL handshake error, certificate mismatch, unsupported TLS",
+            "Misconfiguration risk or incompatible TLS setup"
+        )
+
+    # Closed / Refused
+    if 'closed' in result_status.lower() or 'refused' in result_status.lower():
+        return (
+            "Closed / Refused",
+            "Port is closed or service is not listening",
+            "Connection refused quickly",
+            "Lower exposure, MQTT not reachable on that port"
+        )
+
+    # Unreachable / Timeout
+    if classification == 'closed_or_unreachable' or 'timeout' in result_status.lower() or 'unreachable' in result_status.lower():
+        return (
+            "Unreachable / Timeout",
+            "Port not responding or firewall blocking connections",
+            "socket.timeout: timed out",
+            "Target cannot be reached for further testing"
+        )
+
+    # Unknown/Other
+    return (
+        "Unknown",
+        "Connection result could not be categorized",
+        f"Status: {result_status}, Classification: {classification}",
+        "Requires manual investigation"
+    )
+
 def try_mqtt_connect(host, port, use_tls=False, username=None, password=None, wait_secs=6):
     result = {
         'ip': host,
@@ -189,16 +263,24 @@ def try_mqtt_connect(host, port, use_tls=False, username=None, password=None, wa
         if username:
             client.username_pw_set(username, password)
 
-        if use_tls:
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            try: client.tls_set_context(ctx)
-            except Exception:
+        if use_tls or port == 8883:
+            logger.info(f"Setting up TLS for {host}:{port}")
+            try:
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                client.tls_set_context(ctx)
+                logger.info(f"TLS context set for {host}:{port}")
+            except AttributeError:
+                # Fallback for older paho-mqtt versions
                 try:
-                    client.tls_set()
+                    client.tls_set(cert_reqs=ssl.CERT_NONE)
                     client.tls_insecure_set(True)
-                except Exception: pass
+                    logger.info(f"TLS set (legacy mode) for {host}:{port}")
+                except Exception as tls_e:
+                    logger.error(f"TLS setup failed for {host}:{port}: {tls_e}")
+            except Exception as tls_e:
+                logger.error(f"TLS context setup failed for {host}:{port}: {tls_e}")
 
         connected = False
         last_rc = None
@@ -368,22 +450,23 @@ def try_mqtt_connect(host, port, use_tls=False, username=None, password=None, wa
 
     except socket.timeout:
         result['result'] = 'error:socket_timeout'
-        result['classification'] = 'unreachable_or_firewalled'
+        result['classification'] = 'closed_or_unreachable'
     except ConnectionRefusedError:
         result['result'] = 'error:connection_refused'
-        result['classification'] = 'unreachable_or_firewalled'
+        result['classification'] = 'closed_or_unreachable'
     except OSError as e: # Catch specific network errors like "Network is unreachable"
         result['result'] = f'error:os_error:{str(e)}'
-        result['classification'] = 'network_error_or_unreachable'
+        result['classification'] = 'closed_or_unreachable'
     except Exception as e:
         result['result'] = f'error:{str(e)}'
-        if 'SSL' in str(e) or 'tls' in str(e).lower():
-            result['classification'] = 'tls_or_ssl_error'
+        if 'SSL' in str(e) or 'tls' in str(e).lower() or 'certificate' in str(e).lower():
+            result['classification'] = 'closed_or_unreachable'
+            logger.error(f"TLS/SSL error on {host}:{port}: {str(e)}")
         # Check for authentication failure specifically if possible (depends on exception details)
         elif 'auth' in str(e).lower():
              result['classification'] = 'not_authorized'
         else:
-            result['classification'] = 'error'
+            result['classification'] = 'closed_or_unreachable'
     finally:
         try:
             if client is not None:
@@ -396,6 +479,15 @@ def try_mqtt_connect(host, port, use_tls=False, username=None, password=None, wa
         logger.warning(f"[SECURITY RISK] {host}:{port} allows anonymous access")
     if port == 1883 and result.get('classification') == 'open_or_auth_ok':
         logger.warning(f"[SECURITY RISK] {host}:{port} using insecure port (no TLS)")
+
+    # Add outcome categorization
+    outcome_label, meaning, evidence, security_implication = categorize_outcome(result)
+    result['outcome'] = {
+        'label': outcome_label,
+        'meaning': meaning,
+        'evidence_signal': evidence,
+        'security_implication': security_implication
+    }
 
     return result
 
@@ -479,10 +571,26 @@ def scan_ip(ip, creds=None):
         except (socket.timeout, ConnectionRefusedError, OSError):
              # Port is closed or unreachable at TCP level
             res = {'ip':ip, 'port':p, 'result':'closed_or_unreachable', 'classification':'closed_or_unreachable', 'timestamp': datetime.datetime.utcnow().isoformat(), 'publishers': []}
+            # Add outcome categorization
+            outcome_label, meaning, evidence, security_implication = categorize_outcome(res)
+            res['outcome'] = {
+                'label': outcome_label,
+                'meaning': meaning,
+                'evidence_signal': evidence,
+                'security_implication': security_implication
+            }
             results.append(res)
         except Exception as general_e: # Catch any other unexpected error during the port check phase
             print(f"Unexpected error checking port {ip}:{p} - {general_e}")
             res = {'ip':ip, 'port':p, 'result':f'error_port_check:{str(general_e)}', 'classification':'error', 'timestamp': datetime.datetime.utcnow().isoformat(), 'publishers': []}
+            # Add outcome categorization
+            outcome_label, meaning, evidence, security_implication = categorize_outcome(res)
+            res['outcome'] = {
+                'label': outcome_label,
+                'meaning': meaning,
+                'evidence_signal': evidence,
+                'security_implication': security_implication
+            }
             results.append(res)
         finally:
              if s: # Ensure socket is closed if it was opened

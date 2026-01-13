@@ -1,377 +1,654 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>MQTT Scanner — Dashboard</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <meta name="csrf-token" content="{{ csrf_token() }}">
-  <style>
-    .badge-sec { background:#ecfdf5; color:#065f46; border-radius:.25rem; padding:.25rem .5rem; }
-    .badge-warn { background:#fff7ed; color:#92400e; border-radius:.25rem; padding:.25rem .5rem; }
-    .pre-wrap { white-space: pre-wrap; word-break: break-word; font-family:monospace; font-size:.875rem; }
-    .small-muted { font-size: .9rem; color: #6b7280; }
-    .small-code { background:#f8fafc;padding:6px;border-radius:6px;font-family:monospace }
-  </style>
-</head>
-<body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
-  <div class="container">
-    <a class="navbar-brand" href="#">MQTT Scanner</a>
-    <div class="ms-auto">
-      <a href="/logout" class="btn btn-outline-secondary btn-sm">Logout</a>
-    </div>
-  </div>
-</nav>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>MQTT Scanner — Dashboard</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <meta name="csrf-token" content="{{ csrf_token() }}" />
+        <style>
+            .badge-sec {
+                background: #ecfdf5;
+                color: #065f46;
+                border-radius: 0.25rem;
+                padding: 0.25rem 0.5rem;
+            }
+            .badge-warn {
+                background: #fff7ed;
+                color: #92400e;
+                border-radius: 0.25rem;
+                padding: 0.25rem 0.5rem;
+            }
+            .pre-wrap {
+                white-space: pre-wrap;
+                word-break: break-word;
+                font-family: monospace;
+                font-size: 0.875rem;
+            }
+            .small-muted {
+                font-size: 0.9rem;
+                color: #6b7280;
+            }
+            .small-code {
+                background: #f8fafc;
+                padding: 6px;
+                border-radius: 6px;
+                font-family: monospace;
+            }
+        </style>
+    </head>
+    <body class="bg-light">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+            <div class="container">
+                <a class="navbar-brand" href="#">MQTT Scanner</a>
+                <div class="ms-auto">
+                    <a href="/logout" class="btn btn-outline-secondary btn-sm"
+                        >Logout</a
+                    >
+                </div>
+            </div>
+        </nav>
 
-<div class="container py-4">
-  <div class="card shadow-sm mb-3">
-    <div class="card-body">
-      <form id="scan-form" class="row g-2 align-items-center">
-        <div class="col-auto">
-          <input id="target" class="form-control" value="127.0.0.1" placeholder="127.0.0.1 or 192.168.1.0/24">
-        </div>
-        <div class="col-auto">
-          <input id="user" class="form-control" placeholder="username (optional)">
-        </div>
-        <div class="col-auto">
-          <input id="pass" type="password" class="form-control" placeholder="password (optional)">
-        </div>
-        <div class="col-auto">
-          <div class="form-check form-switch">
-            <input class="form-check-input" type="checkbox" id="deepToggle">
-            <label class="form-check-label small-muted" for="deepToggle">Deep scan (capture live messages)</label>
-          </div>
-        </div>
-        <div class="col-auto">
-          <input id="listenSecs" type="number" class="form-control" value="3" style="width:80px" min="1" max="20">
-        </div>
-        <div class="col-auto">
-          <button id="btn-scan" class="btn btn-primary">Scan</button>
-          <button type="button" class="btn btn-secondary" onclick="fetchResults()">Refresh</button>
-          <button type="button" class="btn btn-outline-secondary" onclick="downloadCSV()">Export CSV</button>
-        </div>
-        <div class="col-12 mt-2">
-          <div id="status" class="small-muted">Status: idle</div>
-        </div>
-      </form>
-    </div>
-  </div>
+        <div class="container py-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <form id="scan-form" class="row g-2 align-items-center">
+                        <div class="col-auto">
+                            <input
+                                id="target"
+                                class="form-control"
+                                value="127.0.0.1"
+                                placeholder="127.0.0.1 or 192.168.1.0/24"
+                            />
+                        </div>
+                        <div class="col-auto">
+                            <input
+                                id="user"
+                                class="form-control"
+                                placeholder="username (optional)"
+                            />
+                        </div>
+                        <div class="col-auto">
+                            <input
+                                id="pass"
+                                type="password"
+                                class="form-control"
+                                placeholder="password (optional)"
+                            />
+                        </div>
+                        <div class="col-auto">
+                            <div class="form-check form-switch">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    id="deepToggle"
+                                />
+                                <label
+                                    class="form-check-label small-muted"
+                                    for="deepToggle"
+                                    >Deep scan (capture live messages)</label
+                                >
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <input
+                                id="listenSecs"
+                                type="number"
+                                class="form-control"
+                                value="3"
+                                style="width: 80px"
+                                min="1"
+                                max="20"
+                            />
+                        </div>
+                        <div class="col-auto">
+                            <button id="btn-scan" class="btn btn-primary">
+                                Scan
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                onclick="fetchResults()"
+                            >
+                                Refresh
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary"
+                                onclick="downloadCSV()"
+                            >
+                                Export CSV
+                            </button>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <div id="status" class="small-muted">
+                                Status: idle
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-  <div id="results-area">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h5 class="card-title">Scan Results</h5>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover">
-            <thead class="table-light">
-              <tr>
-                <th>IP</th><th>Port</th><th>Result</th><th>Classification</th><th>Security Risk</th><th>TLS</th><th>Time</th><th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="results-body"></tbody>
-          </table>
+            <div id="results-area">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Scan Results</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>IP</th>
+                                        <th>Port</th>
+                                        <th>Outcome</th>
+                                        <th>Meaning</th>
+                                        <th>Security Risk</th>
+                                        <th>TLS</th>
+                                        <th>Time</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3 shadow-sm">
+                    <div class="card-body">
+                        <h6>Details (selected)</h6>
+                        <div id="detail-box" class="pre-wrap small-muted">
+                            Click "Details" on a row to view certificate
+                            details, $SYS info, retained topics and live
+                            messages.
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <div class="card mt-3 shadow-sm">
-      <div class="card-body">
-        <h6>Details (selected)</h6>
-        <div id="detail-box" class="pre-wrap small-muted">Click "Details" on a row to view certificate details, $SYS info, retained topics and live messages.</div>
-      </div>
-    </div>
-  </div>
-</div>
+        <script>
+            const STATUS = document.getElementById("status");
+            const RESULTS_BODY = document.getElementById("results-body");
+            const DETAIL_BOX = document.getElementById("detail-box");
+            let latestResults = [];
 
-<script>
-const STATUS = document.getElementById('status');
-const RESULTS_BODY = document.getElementById('results-body');
-const DETAIL_BOX = document.getElementById('detail-box');
-let latestResults = [];
+            function setStatus(t) {
+                STATUS.innerText = "Status: " + t;
+            }
+            function badgeFor(r) {
+                if (!r.outcome && !r.classification) return "badge bg-light";
 
-function setStatus(t){ STATUS.innerText = 'Status: ' + t; }
-function badgeFor(r){
-  if(!r.classification) return 'badge bg-light';
-  const c = r.classification.toLowerCase();
-  if(c.includes('open') || c.includes('ok')) return 'badge badge-sec';
-  if(c.includes('tls') || c.includes('not_authorized') || c.includes('error')) return 'badge badge-warn';
-  return 'badge bg-light';
-}
+                // Use outcome label if available
+                if (r.outcome && r.outcome.label) {
+                    const label = r.outcome.label.toLowerCase();
+                    if (label.includes("connected (1883)"))
+                        return "badge bg-danger"; // High risk
+                    if (label.includes("connected (8883)"))
+                        return "badge bg-warning text-dark"; // Potential risk
+                    if (
+                        label.includes("not authorised") ||
+                        label.includes("auth required")
+                    )
+                        return "badge bg-success"; // Good security
+                    if (label.includes("tls error"))
+                        return "badge bg-warning text-dark"; // Configuration issue
+                    if (label.includes("closed") || label.includes("refused"))
+                        return "badge bg-secondary"; // Port closed
+                    if (
+                        label.includes("unreachable") ||
+                        label.includes("timeout")
+                    )
+                        return "badge bg-secondary"; // Unreachable
+                }
 
-function riskBadge(r){
-  const risk = r.security_summary?.risk_level || 'UNKNOWN';
-  const badges = {
-    'CRITICAL': 'badge bg-danger',
-    'HIGH': 'badge bg-warning text-dark',
-    'MEDIUM': 'badge bg-info text-dark',
-    'LOW': 'badge bg-success',
-    'UNKNOWN': 'badge bg-secondary'
-  };
-  return `<span class="${badges[risk]}">${risk}</span>`;
-}
+                // Fallback to classification
+                const c = (r.classification || "").toLowerCase();
+                if (c.includes("open") || c.includes("ok"))
+                    return "badge badge-sec";
+                if (
+                    c.includes("tls") ||
+                    c.includes("not_authorized") ||
+                    c.includes("error")
+                )
+                    return "badge badge-warn";
+                return "badge bg-light";
+            }
 
-function toRow(r, i){
-  const tls = r.tls ? 'Yes' : 'No';
-  const riskLevel = riskBadge(r);
-  return `
+            function riskBadge(r) {
+                const risk = r.security_summary?.risk_level || "UNKNOWN";
+                const badges = {
+                    CRITICAL: "badge bg-danger",
+                    HIGH: "badge bg-warning text-dark",
+                    MEDIUM: "badge bg-info text-dark",
+                    LOW: "badge bg-success",
+                    UNKNOWN: "badge bg-secondary",
+                };
+                return `<span class="${badges[risk]}">${risk}</span>`;
+            }
+
+            function toRow(r, i) {
+                const tls = r.tls ? "Yes" : "No";
+                const riskLevel = riskBadge(r);
+
+                // Use outcome if available, otherwise fall back to result/classification
+                const outcomeLabel =
+                    r.outcome?.label || r.classification || "Unknown";
+                const outcomeMeaning =
+                    r.outcome?.meaning || r.result || "No details";
+
+                return `
     <tr>
       <td>${r.ip}</td>
       <td>${r.port}</td>
-      <td>${r.result}</td>
-      <td><span class="${badgeFor(r)}">${r.classification}</span></td>
+      <td><span class="${badgeFor(r)}">${outcomeLabel}</span></td>
+      <td class="small">${outcomeMeaning}</td>
       <td>${riskLevel}</td>
       <td>${tls}</td>
-      <td>${r.timestamp}</td>
+      <td class="small">${
+          r.timestamp ? new Date(r.timestamp).toLocaleTimeString() : "N/A"
+      }</td>
       <td>
         <button class="btn btn-sm btn-outline-primary" onclick="showDetails(${i})">Details</button>
       </td>
     </tr>
   `;
-}
+            }
 
-function populate(results){
-  latestResults = results || [];
-  RESULTS_BODY.innerHTML = '';
-  if(!results || results.length===0){
-    RESULTS_BODY.innerHTML = '<tr><td colspan="7" class="small-muted">No results. Click Scan.</td></tr>';
-    return;
-  }
-  results.forEach((r,i)=> RESULTS_BODY.insertAdjacentHTML('beforeend', toRow(r,i)));
-}
+            function populate(results) {
+                latestResults = results || [];
+                RESULTS_BODY.innerHTML = "";
+                if (!results || results.length === 0) {
+                    RESULTS_BODY.innerHTML =
+                        '<tr><td colspan="7" class="small-muted">No results. Click Scan.</td></tr>';
+                    return;
+                }
+                results.forEach((r, i) =>
+                    RESULTS_BODY.insertAdjacentHTML("beforeend", toRow(r, i))
+                );
+            }
 
-async function fetchResults(){
-  setStatus('fetching results...');
-  try{
-    const res = await fetch('/api/results', { credentials: 'same-origin' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    populate(data);
-    setStatus('last updated: ' + new Date().toLocaleTimeString());
-  }catch(e){
-    console.error(e);
-    setStatus('error: ' + e.message);
-  }
-}
+            async function fetchResults() {
+                setStatus("fetching results...");
+                try {
+                    const res = await fetch("/api/results", {
+                        credentials: "same-origin",
+                    });
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    const data = await res.json();
+                    populate(data);
+                    setStatus(
+                        "last updated: " + new Date().toLocaleTimeString()
+                    );
+                } catch (e) {
+                    console.error(e);
+                    setStatus("error: " + e.message);
+                }
+            }
 
-async function triggerScan(evt){
-  if(evt) evt.preventDefault();
-  setStatus('running scan...');
-  const target = document.getElementById('target').value || '127.0.0.1';
-  const user = document.getElementById('user').value || null;
-  const pass = document.getElementById('pass').value || null;
-  const creds = (user && pass) ? { user, pass } : null;
-  const capture_all = document.getElementById('deepToggle').checked;
-  const listen_secs = parseInt(document.getElementById('listenSecs').value || '3');
+            async function triggerScan(evt) {
+                if (evt) evt.preventDefault();
+                setStatus("running scan...");
+                const target =
+                    document.getElementById("target").value || "127.0.0.1";
+                const user = document.getElementById("user").value || null;
+                const pass = document.getElementById("pass").value || null;
+                const creds = user && pass ? { user, pass } : null;
+                const capture_all =
+                    document.getElementById("deepToggle").checked;
+                const listen_secs = parseInt(
+                    document.getElementById("listenSecs").value || "3"
+                );
 
-  document.getElementById('btn-scan').disabled = true;
-  try{
-    const res = await fetch('/api/scan', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-      },
-      credentials: 'same-origin',
-      body: JSON.stringify({ target, creds, capture_all_topics: capture_all, listen_duration: listen_secs })
-    });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
-    // server returns enriched results under json.results or direct array; handle both
-    const rows = json.results || json;
-    populate(rows);
-    setStatus('scan finished: ' + (rows.length || 0));
-  }catch(e){
-    console.error(e);
-    setStatus('error: ' + e.message);
-  }finally{
-    document.getElementById('btn-scan').disabled = false;
-  }
-}
+                document.getElementById("btn-scan").disabled = true;
+                try {
+                    const res = await fetch("/api/scan", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": document
+                                .querySelector('meta[name="csrf-token"]')
+                                .getAttribute("content"),
+                        },
+                        credentials: "same-origin",
+                        body: JSON.stringify({
+                            target,
+                            creds,
+                            capture_all_topics: capture_all,
+                            listen_duration: listen_secs,
+                        }),
+                    });
+                    if (!res.ok) throw new Error("HTTP " + res.status);
+                    const json = await res.json();
+                    // server returns enriched results under json.results or direct array; handle both
+                    const rows = json.results || json;
+                    populate(rows);
+                    setStatus("scan finished: " + (rows.length || 0));
+                } catch (e) {
+                    console.error(e);
+                    setStatus("error: " + e.message);
+                } finally {
+                    document.getElementById("btn-scan").disabled = false;
+                }
+            }
 
-function showDetails(index){
-  const r = latestResults[index];
-  if(!r) return;
+            function showDetails(index) {
+                const r = latestResults[index];
+                if (!r) return;
 
-  let text = `╔════════════════════════════════════════════════════════════╗
+                let text = `╔════════════════════════════════════════════════════════════╗
 ║                    MQTT SECURITY SCAN REPORT                ║
 ╚════════════════════════════════════════════════════════════╝
 
 📍 TARGET INFORMATION
 IP Address: ${r.ip}
-Port: ${r.port} (${r.port === 1883 ? 'Insecure MQTT' : r.port === 8883 ? 'Secure MQTT/TLS' : 'Non-standard'})
-Result: ${r.result}
+Port: ${r.port} (${
+                    r.port === 1883
+                        ? "Insecure MQTT"
+                        : r.port === 8883
+                        ? "Secure MQTT/TLS"
+                        : "Non-standard"
+                })
+
+`;
+
+                // Add Outcome Information (if available)
+                if (r.outcome) {
+                    text += `📊 OUTCOME ANALYSIS
+Outcome Label: ${r.outcome.label}
+Meaning: ${r.outcome.meaning}
+Evidence Signal: ${r.outcome.evidence_signal}
+Security Implication: ${r.outcome.security_implication}
+
+`;
+
+                    // 🚨 SPECIAL SECTION: Show Error Evidence for Unreachable/Timeout
+                    if (
+                        r.outcome.label.toLowerCase().includes("unreachable") ||
+                        r.outcome.label.toLowerCase().includes("timeout") ||
+                        r.classification === "closed_or_unreachable"
+                    ) {
+                        text += `🚨 ERROR EVIDENCE (PROOF OF UNREACHABLE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This outcome was determined by capturing actual Python
+socket errors during connection attempts. The scanner
+detected:
+
+Error Type: socket.timeout or ConnectionRefusedError
+Python Exception: "${r.outcome.evidence_signal}"
+What This Proves: The target IP/port combination is
+                  genuinely unreachable (no response
+                  within 2 seconds timeout period).
+
+Technical Details:
+• Scanner uses socket.create_connection() with 2s timeout
+• No TCP handshake completion = socket.timeout exception
+• No MQTT broker listening = Connection refused
+• This is the same error Python's paho-mqtt library throws
+
+Verification Command (run in Python):
+    import socket
+    socket.create_connection(('${r.target}', ${r.port}), timeout=2)
+    # This will raise: ${r.outcome.evidence_signal}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+`;
+                    }
+                } else {
+                    text += `Result: ${r.result}
 Classification: ${r.classification}
-Timestamp: ${r.timestamp}
+`;
+                }
+
+                text += `Timestamp: ${r.timestamp}
 
 `;
 
-  // Security Summary
-  if(r.security_summary){
-    const riskEmoji = {
-      'CRITICAL': '🔴',
-      'HIGH': '🟠',
-      'MEDIUM': '🟡',
-      'LOW': '🟢',
-      'UNKNOWN': '⚪'
-    };
-    text += `🔒 SECURITY ASSESSMENT
-Risk Level: ${riskEmoji[r.security_summary.risk_level] || ''} ${r.security_summary.risk_level}
+                // Security Summary
+                if (r.security_summary) {
+                    const riskEmoji = {
+                        CRITICAL: "🔴",
+                        HIGH: "🟠",
+                        MEDIUM: "🟡",
+                        LOW: "🟢",
+                        UNKNOWN: "⚪",
+                    };
+                    text += `🔒 SECURITY ASSESSMENT
+Risk Level: ${riskEmoji[r.security_summary.risk_level] || ""} ${
+                        r.security_summary.risk_level
+                    }
 
 `;
 
-    if(r.security_summary.issues && r.security_summary.issues.length > 0){
-      text += `⚠️  Security Issues Found:\n`;
-      r.security_summary.issues.forEach(issue => {
-        text += `   • ${issue}\n`;
-      });
-      text += '\n';
-    }
+                    if (
+                        r.security_summary.issues &&
+                        r.security_summary.issues.length > 0
+                    ) {
+                        text += `⚠️  Security Issues Found:\n`;
+                        r.security_summary.issues.forEach((issue) => {
+                            text += `   • ${issue}\n`;
+                        });
+                        text += "\n";
+                    }
 
-    if(r.security_summary.recommendations && r.security_summary.recommendations.length > 0){
-      text += `💡 Recommendations:\n`;
-      r.security_summary.recommendations.forEach(rec => {
-        text += `   ✓ ${rec}\n`;
-      });
-      text += '\n';
-    }
-  }
+                    if (
+                        r.security_summary.recommendations &&
+                        r.security_summary.recommendations.length > 0
+                    ) {
+                        text += `💡 Recommendations:\n`;
+                        r.security_summary.recommendations.forEach((rec) => {
+                            text += `   ✓ ${rec}\n`;
+                        });
+                        text += "\n";
+                    }
+                }
 
-  // Security Assessment Details
-  if(r.security_assessment){
-    text += `🛡️  ACCESS CONTROL
-Anonymous Access: ${r.security_assessment.anonymous_allowed ? '❌ ALLOWED (Security Risk!)' : '✅ Disabled'}
-Authentication: ${r.security_assessment.requires_auth ? '✅ Required' : '❌ Not Required'}
-Port Type: ${r.security_assessment.port_type === 'secure' ? '🔐 Secure (TLS)' : '⚠️  Insecure (Plain)'}
+                // Security Assessment Details
+                if (r.security_assessment) {
+                    text += `🛡️  ACCESS CONTROL
+Anonymous Access: ${
+                        r.security_assessment.anonymous_allowed
+                            ? "❌ ALLOWED (Security Risk!)"
+                            : "✅ Disabled"
+                    }
+Authentication: ${
+                        r.security_assessment.requires_auth
+                            ? "✅ Required"
+                            : "❌ Not Required"
+                    }
+Port Type: ${
+                        r.security_assessment.port_type === "secure"
+                            ? "🔐 Secure (TLS)"
+                            : "⚠️  Insecure (Plain)"
+                    }
 
 `;
-  }
+                }
 
-  // TLS Analysis
-  if(r.tls_analysis){
-    text += `🔐 TLS/SSL CERTIFICATE ANALYSIS\n`;
-    if(r.tls_analysis.error){
-      text += `Error: ${r.tls_analysis.error}\n\n`;
-    } else if(r.tls_analysis.has_tls){
-      const cert = r.tls_analysis.cert_details;
-      text += `Certificate Status: ${r.tls_analysis.cert_valid ? '✅ Valid' : '❌ Invalid'}\n`;
-      text += `Security Score: ${r.tls_analysis.security_score}/100\n\n`;
+                // TLS Analysis
+                if (r.tls_analysis) {
+                    text += `🔐 TLS/SSL CERTIFICATE ANALYSIS\n`;
+                    if (r.tls_analysis.error) {
+                        text += `Error: ${r.tls_analysis.error}\n\n`;
+                    } else if (r.tls_analysis.has_tls) {
+                        const cert = r.tls_analysis.cert_details;
+                        text += `Certificate Status: ${
+                            r.tls_analysis.cert_valid
+                                ? "✅ Valid"
+                                : "❌ Invalid"
+                        }\n`;
+                        text += `Security Score: ${r.tls_analysis.security_score}/100\n\n`;
 
-      text += `Certificate Details:\n`;
-      text += `   Common Name: ${cert.common_name || 'N/A'}\n`;
-      text += `   Organization: ${cert.organization || 'N/A'}\n`;
-      text += `   Valid From: ${cert.valid_from || 'N/A'}\n`;
-      text += `   Valid To: ${cert.valid_to || 'N/A'}\n`;
-      if(cert.days_until_expiry !== undefined){
-        text += `   Days Until Expiry: ${cert.days_until_expiry}\n`;
-      }
-      text += `   Self-Signed: ${cert.self_signed ? '⚠️  Yes' : '✅ No'}\n`;
-      text += `   Expired: ${cert.expired ? '❌ Yes' : '✅ No'}\n`;
-      text += `   TLS Version: ${cert.tls_version || 'Unknown'}\n`;
-      if(cert.cipher){
-        text += `   Cipher Suite: ${cert.cipher[0]} (${cert.cipher[1]}, ${cert.cipher[2]} bits)\n`;
-      }
-      text += `   Serial Number: ${cert.serial_number || 'N/A'}\n`;
-      if(cert.fingerprint_sha256){
-        text += `   SHA256 Fingerprint: ${cert.fingerprint_sha256}\n`;
-      }
-      text += '\n';
+                        text += `Certificate Details:\n`;
+                        text += `   Common Name: ${
+                            cert.common_name || "N/A"
+                        }\n`;
+                        text += `   Organization: ${
+                            cert.organization || "N/A"
+                        }\n`;
+                        text += `   Valid From: ${cert.valid_from || "N/A"}\n`;
+                        text += `   Valid To: ${cert.valid_to || "N/A"}\n`;
+                        if (cert.days_until_expiry !== undefined) {
+                            text += `   Days Until Expiry: ${cert.days_until_expiry}\n`;
+                        }
+                        text += `   Self-Signed: ${
+                            cert.self_signed ? "⚠️  Yes" : "✅ No"
+                        }\n`;
+                        text += `   Expired: ${
+                            cert.expired ? "❌ Yes" : "✅ No"
+                        }\n`;
+                        text += `   TLS Version: ${
+                            cert.tls_version || "Unknown"
+                        }\n`;
+                        if (cert.cipher) {
+                            text += `   Cipher Suite: ${cert.cipher[0]} (${cert.cipher[1]}, ${cert.cipher[2]} bits)\n`;
+                        }
+                        text += `   Serial Number: ${
+                            cert.serial_number || "N/A"
+                        }\n`;
+                        if (cert.fingerprint_sha256) {
+                            text += `   SHA256 Fingerprint: ${cert.fingerprint_sha256}\n`;
+                        }
+                        text += "\n";
 
-      if(r.tls_analysis.security_issues && r.tls_analysis.security_issues.length > 0){
-        text += `⚠️  TLS Security Issues:\n`;
-        r.tls_analysis.security_issues.forEach(issue => {
-          text += `   • ${issue}\n`;
-        });
-        text += '\n';
-      }
-    }
-  }
+                        if (
+                            r.tls_analysis.security_issues &&
+                            r.tls_analysis.security_issues.length > 0
+                        ) {
+                            text += `⚠️  TLS Security Issues:\n`;
+                            r.tls_analysis.security_issues.forEach((issue) => {
+                                text += `   • ${issue}\n`;
+                            });
+                            text += "\n";
+                        }
+                    }
+                }
 
-  // Publishers and Subscribers
-  if(r.publishers && r.publishers.length > 0){
-    text += `📤 DETECTED PUBLISHERS (${r.publishers.length})\n`;
-    r.publishers.forEach((pub, idx) => {
-      text += `   ${idx + 1}. Topic: ${pub.topic}\n`;
-      text += `      Payload Size: ${pub.payload_size} bytes\n`;
-      text += `      QoS: ${pub.qos}, Retained: ${pub.retained}\n`;
-      if(pub.client_id_note){
-        text += `      Note: ${pub.client_id_note}\n`;
-      }
-    });
-    text += '\n';
-  } else {
-    text += `📤 PUBLISHERS: None detected during scan\n\n`;
-  }
+                // Publishers and Subscribers
+                if (r.publishers && r.publishers.length > 0) {
+                    text += `📤 DETECTED PUBLISHERS (${r.publishers.length})\n`;
+                    r.publishers.forEach((pub, idx) => {
+                        text += `   ${idx + 1}. Topic: ${pub.topic}\n`;
+                        text += `      Payload Size: ${pub.payload_size} bytes\n`;
+                        text += `      QoS: ${pub.qos}, Retained: ${pub.retained}\n`;
+                        if (pub.client_id_note) {
+                            text += `      Note: ${pub.client_id_note}\n`;
+                        }
+                    });
+                    text += "\n";
+                } else {
+                    text += `📤 PUBLISHERS: None detected during scan\n\n`;
+                }
 
-  if(r.subscribers && r.subscribers.length > 0){
-    text += `📥 DETECTED SUBSCRIBERS (${r.subscribers.length})\n`;
-    r.subscribers.forEach((sub, idx) => {
-      text += `   ${idx + 1}. Client ID: ${sub.client_id}\n`;
-      if(sub.detected_via){
-        text += `      Detected via: ${sub.detected_via}\n`;
-      }
-      if(sub.note){
-        text += `      Note: ${sub.note}\n`;
-      }
-    });
-    text += '\n';
-  } else {
-    text += `📥 SUBSCRIBERS: None detected during scan\n\n`;
-  }
+                if (r.subscribers && r.subscribers.length > 0) {
+                    text += `📥 DETECTED SUBSCRIBERS (${r.subscribers.length})\n`;
+                    r.subscribers.forEach((sub, idx) => {
+                        text += `   ${idx + 1}. Client ID: ${sub.client_id}\n`;
+                        if (sub.detected_via) {
+                            text += `      Detected via: ${sub.detected_via}\n`;
+                        }
+                        if (sub.note) {
+                            text += `      Note: ${sub.note}\n`;
+                        }
+                    });
+                    text += "\n";
+                } else {
+                    text += `📥 SUBSCRIBERS: None detected during scan\n\n`;
+                }
 
-  // Topics Discovered
-  if(r.topics_discovered && Object.keys(r.topics_discovered).length > 0){
-    text += `📋 ACTIVE TOPICS DISCOVERED (${Object.keys(r.topics_discovered).length})\n`;
-    Object.entries(r.topics_discovered).forEach(([topic, info]) => {
-      text += `   • ${topic}\n`;
-      text += `     First Seen: ${info.first_seen}\n`;
-      text += `     Message Count: ${info.message_count}\n`;
-    });
-    text += '\n';
-  }
+                // Topics Discovered
+                if (
+                    r.topics_discovered &&
+                    Object.keys(r.topics_discovered).length > 0
+                ) {
+                    text += `📋 ACTIVE TOPICS DISCOVERED (${
+                        Object.keys(r.topics_discovered).length
+                    })\n`;
+                    Object.entries(r.topics_discovered).forEach(
+                        ([topic, info]) => {
+                            text += `   • ${topic}\n`;
+                            text += `     First Seen: ${info.first_seen}\n`;
+                            text += `     Message Count: ${info.message_count}\n`;
+                        }
+                    );
+                    text += "\n";
+                }
 
-  // Broker Info (from app.py probe)
-  if(r.broker_info){
-    text += `🖥️  BROKER INFORMATION\n`;
-    if(r.broker_info.error){
-      text += `Error: ${r.broker_info.error}\n`;
-    } else {
-      text += `$SYS Topics: ${r.broker_info.sys_count || 0}\n`;
-      text += `Regular Topics: ${r.broker_info.regular_count || 0}\n`;
-      text += `Retained Topics: ${r.broker_info.retained_topics?.length || 0}\n`;
-    }
-    text += '\n';
-  }
+                // Broker Info (from app.py probe)
+                if (r.broker_info) {
+                    text += `🖥️  BROKER INFORMATION\n`;
+                    if (r.broker_info.error) {
+                        text += `Error: ${r.broker_info.error}\n`;
+                    } else {
+                        text += `$SYS Topics: ${
+                            r.broker_info.sys_count || 0
+                        }\n`;
+                        text += `Regular Topics: ${
+                            r.broker_info.regular_count || 0
+                        }\n`;
+                        text += `Retained Topics: ${
+                            r.broker_info.retained_topics?.length || 0
+                        }\n`;
+                    }
+                    text += "\n";
+                }
 
-  // Certificate Info (from app.py)
-  if(r.cert_info && !r.tls_analysis){
-    text += `📜 CERTIFICATE INFO (from app probe)\n`;
-    if(r.cert_info.error){
-      text += `${r.cert_info.error}\n\n`;
-    } else {
-      text += JSON.stringify(r.cert_info, null, 2) + '\n\n';
-    }
-  }
+                // Certificate Info (from app.py)
+                if (r.cert_info && !r.tls_analysis) {
+                    text += `📜 CERTIFICATE INFO (from app probe)\n`;
+                    if (r.cert_info.error) {
+                        text += `${r.cert_info.error}\n\n`;
+                    } else {
+                        text += JSON.stringify(r.cert_info, null, 2) + "\n\n";
+                    }
+                }
 
-  DETAIL_BOX.innerText = text;
-}
+                DETAIL_BOX.innerText = text;
+            }
 
-function downloadCSV(){
-  // attempt to use last displayed rows
-  if(!latestResults || latestResults.length===0){ alert('No rows'); return; }
-  const header = ['ip','port','result','classification','timestamp'];
-  const rows = latestResults.map(r => header.map(h => `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','));
-  const csv = [header.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download='mqtt_scan_report.csv'; a.click(); URL.revokeObjectURL(url);
-}
+            function downloadCSV() {
+                // attempt to use last displayed rows
+                if (!latestResults || latestResults.length === 0) {
+                    alert("No rows");
+                    return;
+                }
+                const header = [
+                    "ip",
+                    "port",
+                    "result",
+                    "classification",
+                    "timestamp",
+                ];
+                const rows = latestResults.map((r) =>
+                    header
+                        .map(
+                            (h) =>
+                                `"${(r[h] || "")
+                                    .toString()
+                                    .replace(/"/g, '""')}"`
+                        )
+                        .join(",")
+                );
+                const csv = [header.join(","), ...rows].join("\n");
+                const blob = new Blob([csv], {
+                    type: "text/csv;charset=utf-8;",
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "mqtt_scan_report.csv";
+                a.click();
+                URL.revokeObjectURL(url);
+            }
 
-document.addEventListener('DOMContentLoaded', ()=> {
-  fetchResults();
-  document.getElementById('scan-form').addEventListener('submit', triggerScan);
-});
-</script>
-</body>
+            document.addEventListener("DOMContentLoaded", () => {
+                fetchResults();
+                document
+                    .getElementById("scan-form")
+                    .addEventListener("submit", triggerScan);
+            });
+        </script>
+    </body>
 </html>

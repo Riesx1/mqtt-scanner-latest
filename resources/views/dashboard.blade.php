@@ -232,6 +232,33 @@
                             </div>
                         </div>
 
+                        <!-- Filter and Sort Controls -->
+                        <div class="mb-4 p-4 bg-gray-700 rounded-lg flex flex-wrap gap-3 items-center">
+                            <span class="text-sm font-medium text-gray-300">Filter:</span>
+                            <button onclick="filterResults('all')" id="filterAll" class="filter-btn px-3 py-1 rounded-lg text-sm font-medium bg-blue-600 text-white">
+                                Show All
+                            </button>
+                            <button onclick="filterResults('active')" id="filterActive" class="filter-btn px-3 py-1 rounded-lg text-sm font-medium bg-gray-600 text-gray-300 hover:bg-gray-500">
+                                Active Only
+                            </button>
+                            <button onclick="filterResults('failed')" id="filterFailed" class="filter-btn px-3 py-1 rounded-lg text-sm font-medium bg-gray-600 text-gray-300 hover:bg-gray-500">
+                                Failed/Unreachable
+                            </button>
+                            <button onclick="filterResults('hide-failed')" id="filterHideFailed" class="filter-btn px-3 py-1 rounded-lg text-sm font-medium bg-gray-600 text-gray-300 hover:bg-gray-500">
+                                Hide Unreachable
+                            </button>
+                            <span class="ml-4 text-sm font-medium text-gray-300">Sort:</span>
+                            <select id="sortSelect" onchange="sortResults(this.value)" class="px-3 py-1 bg-gray-600 text-white rounded-lg text-sm border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="default">Default Order</option>
+                                <option value="ip-asc">IP (Low to High)</option>
+                                <option value="ip-desc">IP (High to Low)</option>
+                                <option value="port-asc">Port (Low to High)</option>
+                                <option value="port-desc">Port (High to Low)</option>
+                                <option value="status">Status</option>
+                            </select>
+                            <span id="resultCount" class="ml-auto text-sm text-gray-400"></span>
+                        </div>
+
                         <div class="overflow-x-auto rounded-lg border border-gray-700">
                             <table class="min-w-full divide-y divide-gray-700">
                                 <thead class="bg-gray-700">
@@ -314,13 +341,203 @@
         let scanStartTime = null;
         let scanEndTime = null;
 
-        // Show details modal
+        // Get outcome badge based on scan result outcome
+        function getOutcomeBadge(outcome) {
+            if (!outcome || !outcome.label) {
+                return '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">No Outcome</span>';
+            }
+
+            const label = outcome.label.toLowerCase();
+
+            // Network/Connection Issues (Red/Dark Gray)
+            if (label.includes('unreachable') || label.includes('network unreachable')) {
+                return '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-600 text-white">🚫 ' + outcome.label + '</span>';
+            }
+            if (label.includes('timeout') || label.includes('connection timeout')) {
+                return '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-600 text-white">⏱️ ' + outcome.label + '</span>';
+            }
+            if (label.includes('connection refused') || label.includes('refused')) {
+                return '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-700 text-white">🛑 ' + outcome.label + '</span>';
+            }
+
+            // Authentication/Authorization Issues (Orange/Yellow)
+            if (label.includes('auth required') || label.includes('authentication required')) {
+                return '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-500 text-white">🔐 ' + outcome.label + '</span>';
+            }
+            if (label.includes('auth failed') || label.includes('not authorized')) {
+                return '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-600 text-white">🔒 ' + outcome.label + '</span>';
+            }
+
+            // Success States (Green)
+            if (label.includes('anonymous success') || label.includes('open access')) {
+                return '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-500 text-white">✅ ' + outcome.label + '</span>';
+            }
+
+            // Default
+            return '<span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-500 text-white">' + outcome.label + '</span>';
+        }
+
+        // Filter results by type
+        function filterResults(filterType) {
+            const tbody = document.getElementById('resultsTableBody');
+            const rows = tbody.querySelectorAll('tr');
+            let visibleCount = 0;
+
+            // Map filter types to button IDs
+            const buttonIds = {
+                'all': 'filterAll',
+                'active': 'filterActive',
+                'failed': 'filterFailed',
+                'hide-failed': 'filterHideFailed'
+            };
+
+            // Update button styles
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-gray-600', 'text-gray-300');
+            });
+
+            const activeBtn = document.getElementById(buttonIds[filterType]);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-blue-600', 'text-white');
+                activeBtn.classList.remove('bg-gray-600', 'text-gray-300');
+            }
+
+            rows.forEach((row, index) => {
+                const sensor = globalSensors[index];
+                if (!sensor) return;
+
+                let shouldShow = false;
+
+                switch(filterType) {
+                    case 'all':
+                        shouldShow = true;
+                        break;
+                    case 'active':
+                        // Show only successfully connected sensors (not failed)
+                        shouldShow = sensor.classification !== 'closed_or_unreachable';
+                        break;
+                    case 'failed':
+                        // Show only failed/unreachable
+                        shouldShow = sensor.classification === 'closed_or_unreachable';
+                        break;
+                    case 'hide-failed':
+                        // Hide unreachable, show everything else
+                        shouldShow = sensor.classification !== 'closed_or_unreachable';
+                        break;
+                }
+
+                if (shouldShow) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Update result count
+            document.getElementById('resultCount').textContent = `Showing ${visibleCount} of ${rows.length} results`;
+        }
+
+        // Sort results
+        function sortResults(sortType) {
+            const tbody = document.getElementById('resultsTableBody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+
+            // Create array of sensor-row pairs
+            const pairs = rows.map((row, index) => ({
+                row: row,
+                sensor: globalSensors[index]
+            }));
+
+            // Sort based on type
+            pairs.sort((a, b) => {
+                switch(sortType) {
+                    case 'ip-asc':
+                        return ipToNumber(a.sensor.ip) - ipToNumber(b.sensor.ip);
+                    case 'ip-desc':
+                        return ipToNumber(b.sensor.ip) - ipToNumber(a.sensor.ip);
+                    case 'port-asc':
+                        return a.sensor.port - b.sensor.port;
+                    case 'port-desc':
+                        return b.sensor.port - a.sensor.port;
+                    case 'status':
+                        const statusOrder = {'closed_or_unreachable': 0, 'not_authorized': 1, 'open_or_auth_ok': 2};
+                        return (statusOrder[a.sensor.classification] || 3) - (statusOrder[b.sensor.classification] || 3);
+                    default:
+                        return 0; // default order
+                }
+            });
+
+            // Re-append rows in sorted order and update globalSensors
+            const newSensors = [];
+            pairs.forEach(pair => {
+                tbody.appendChild(pair.row);
+                newSensors.push(pair.sensor);
+            });
+            globalSensors = newSensors;
+        }
+
+        // Convert IP to number for sorting
+        function ipToNumber(ip) {
+            if (!ip) return 0;
+            const parts = ip.split('.');
+            return ((+parts[0] || 0) * 16777216) + ((+parts[1] || 0) * 65536) + ((+parts[2] || 0) * 256) + (+parts[3] || 0);
+        }
+
+        // Show details from row button (reads sensor data from data attribute)
+        function showDetailsFromRow(button) {
+            try {
+                // Get the row element
+                const row = button.closest('tr');
+                if (!row) {
+                    console.error('Could not find row element');
+                    return;
+                }
+
+                // Get sensor data from data attribute
+                const sensorDataJson = row.dataset.sensorData;
+                if (!sensorDataJson) {
+                    console.error('No sensor data found in row');
+                    return;
+                }
+
+                const sensor = JSON.parse(sensorDataJson);
+                console.log('Showing details for sensor:', sensor);
+
+                // Call the original showDetails with the sensor object directly
+                showDetailsWithSensor(sensor);
+            } catch (error) {
+                console.error('Error showing details:', error);
+                alert('Error showing details: ' + error.message);
+            }
+        }
+
+        // Show details modal (legacy - uses index)
         function showDetails(index) {
+            console.log('showDetails called with index:', index);
+            console.log('globalSensors:', globalSensors);
             const sensor = globalSensors[index];
-            if (!sensor) return;
+            console.log('Selected sensor:', sensor);
+            if (!sensor) {
+                console.error('No sensor found at index', index);
+                return;
+            }
+            showDetailsWithSensor(sensor);
+        }
+
+        // Show details modal with sensor object
+        function showDetailsWithSensor(sensor) {
+            console.log('Displaying details for sensor:', sensor);
 
             const modal = document.getElementById('detailsModal');
             const content = document.getElementById('detailsContent');
+
+            if (!modal || !content) {
+                console.error('Modal elements not found');
+                alert('Error: Modal elements not found in page');
+                return;
+            }
 
             // Parse sensor data from payload
             let sensorReadings = '';
@@ -539,7 +756,8 @@
 </div>`;
             }
 
-            content.innerHTML = `
+            try {
+                content.innerHTML = `
 <div class="space-y-4">
     <div class="text-center border-b-2 border-blue-500 pb-4">
         <div class="text-2xl font-bold text-white">╔═════════════════════════════════════════════════╗</div>
@@ -615,10 +833,53 @@
     ${tlsInfo}
 
     ${publisherInfo}
+
+    ${sensor.outcome ? `
+    <div class="bg-gray-900 rounded p-4 border-l-4 ${sensor.outcome.label.toLowerCase().includes('unreachable') || sensor.outcome.label.toLowerCase().includes('timeout') || sensor.outcome.label.toLowerCase().includes('refused') ? 'border-red-500' : sensor.outcome.label.toLowerCase().includes('auth') ? 'border-yellow-500' : 'border-green-500'}">
+        <div class="font-bold text-white mb-2">🎯 SCAN OUTCOME ANALYSIS</div>
+        <div class="space-y-2">
+            <div>
+                <span class="text-gray-400">Outcome:</span>
+                <span class="ml-2">${getOutcomeBadge(sensor.outcome)}</span>
+            </div>
+            <div>
+                <span class="text-gray-400">Meaning:</span>
+                <span class="ml-2 text-blue-300">${sensor.outcome.meaning || 'N/A'}</span>
+            </div>
+            ${sensor.outcome.security_implication ? `
+            <div>
+                <span class="text-gray-400">Security Implication:</span>
+                <div class="ml-2 text-yellow-300 mt-1">${sensor.outcome.security_implication}</div>
+            </div>` : ''}
+            ${(sensor.outcome.label.toLowerCase().includes('unreachable') ||
+               sensor.outcome.label.toLowerCase().includes('timeout') ||
+               sensor.outcome.label.toLowerCase().includes('refused') ||
+               sensor.classification === 'closed_or_unreachable') ? `
+            <div class="mt-3 p-3 bg-red-900 bg-opacity-50 border border-red-500 rounded">
+                <div class="font-bold text-red-300 mb-2">🚨 ERROR EVIDENCE (PROOF OF UNREACHABLE)</div>
+                <div class="space-y-1 text-sm">
+                    <div class="text-red-200">Technical Error Signal Captured:</div>
+                    <div class="bg-black rounded p-2 text-xs font-mono text-red-400">
+                        ${sensor.outcome.evidence_signal || 'No error details available'}
+                    </div>
+                    <div class="text-yellow-300 mt-2">
+                        ⚠️ This proves the port is ${sensor.outcome.label.toLowerCase().includes('timeout') ? 'not responding (filtered/timeout)' :
+                                                       sensor.outcome.label.toLowerCase().includes('refused') ? 'actively refusing connections (closed)' :
+                                                       'unreachable from this network position'}
+                    </div>
+                </div>
+            </div>` : ''}
+        </div>
+    </div>` : ''}
 </div>
             `;
 
-            modal.classList.remove('hidden');
+                modal.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error building modal content:', error);
+                console.error('Sensor data:', sensor);
+                alert('Error displaying details: ' + error.message);
+            }
         }
 
         // Close details modal
@@ -949,6 +1210,12 @@
                          sensorType = 'Broker Open';
                          sensorIcon = '📡';
                          shouldShow = true;
+                    } else if (row.classification === 'closed_or_unreachable') {
+                        // Show unreachable/closed ports with error evidence
+                        statusMsg = row.outcome?.label || 'Port Unreachable';
+                        sensorType = 'Connection Failed';
+                        sensorIcon = '🚫';
+                        shouldShow = true;
                     }
 
                     if (shouldShow) {
@@ -1086,7 +1353,7 @@
                         </span>
                     </td>
                     <td class="px-4 py-3 text-sm">
-                        <button onclick="showDetails(${index})" class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
+                        <button onclick="showDetailsFromRow(this)" class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded transition-colors">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
@@ -1106,6 +1373,9 @@
 
             // Force update summary cards immediately after displaying results
             updateSummaryCards(results);
+
+            // Initialize result count display
+            document.getElementById('resultCount').textContent = `Showing ${sensors.length} of ${sensors.length} results`;
         }
 
         // Update summary cards

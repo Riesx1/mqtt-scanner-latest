@@ -424,7 +424,392 @@ def test_mqtt_auth(host, port, timeout=TIMEOUT):
     return auth_result
 ```
 
-### 3.2 Flask API Server
+### 3.2 Scan Output: Understanding Result States
+
+The MQTT Security Scanner provides comprehensive outcome categorization for each scanned broker. Understanding these outcome states is crucial for security assessment and remediation planning.
+
+#### 3.2.1 Outcome Classification System
+
+The scanner categorizes every connection attempt into one of six distinct outcome states, each providing specific security insights:
+
+**Outcome State Summary Table:**
+
+| Outcome Label                      | Meaning                                                   | Evidence Signal                                            | Security Implication                                          |
+| ---------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------- |
+| **Connected (1883)**               | Broker accepts connection on plaintext port               | Successful MQTT connect on port 1883                       | High risk, traffic is unencrypted and may allow eavesdropping |
+| **Connected (8883)**               | Broker accepts connection over TLS                        | Successful TLS handshake and MQTT connect                  | Potentially safer, must still verify certificate and auth     |
+| **Not Authorised / Auth Required** | Broker rejects anonymous or invalid credentials           | Connection fails with auth response                        | Positive security control, authentication is enforced         |
+| **TLS Error**                      | TLS handshake fails due to certificate or protocol issues | SSL handshake error, certificate mismatch, unsupported TLS | Misconfiguration risk or incompatible TLS setup               |
+| **Closed / Refused**               | Port is closed or service is not listening                | Connection refused quickly                                 | Lower exposure, MQTT not reachable on that port               |
+| **Unreachable / Timeout**          | Host does not respond or network path blocked             | Timeout or unreachable error                               | Endpoint likely offline, filtered, or blocked by firewall     |
+
+#### 3.2.2 Detailed Outcome Analysis
+
+##### 1. Connected (1883) - Critical Security Risk
+
+**Characteristics:**
+
+-   Port 1883 is the standard MQTT port for unencrypted connections
+-   Successful TCP connection followed by successful MQTT CONNECT packet
+-   No TLS/SSL encryption applied to the connection
+
+**Security Implications:**
+
+-   **Traffic Visibility:** All MQTT messages transmitted in plaintext
+-   **Eavesdropping Risk:** Network sniffing tools can capture sensor data, credentials, and commands
+-   **Man-in-the-Middle Attacks:** Attackers can intercept and modify messages
+-   **Credential Exposure:** If authentication is used, credentials may be captured
+
+**Example Scan Output:**
+
+```json
+{
+    "ip": "192.168.1.100",
+    "port": 1883,
+    "outcome": {
+        "label": "Connected (1883)",
+        "meaning": "Broker accepts connection on plaintext port",
+        "evidence_signal": "Successful MQTT connect on port 1883",
+        "security_implication": "High risk, traffic is unencrypted and may allow eavesdropping"
+    },
+    "security_assessment": {
+        "anonymous_allowed": true,
+        "requires_auth": false,
+        "port_type": "insecure"
+    },
+    "security_summary": {
+        "risk_level": "HIGH",
+        "issues": [
+            "Using insecure port (1883) - no encryption",
+            "Anonymous access is allowed"
+        ]
+    }
+}
+```
+
+**Remediation Actions:**
+
+1. Migrate all clients to port 8883 with TLS enabled
+2. Configure authentication (username/password or certificates)
+3. Disable anonymous access
+4. Consider disabling port 1883 entirely in production
+
+---
+
+##### 2. Connected (8883) - Secure Connection Established
+
+**Characteristics:**
+
+-   Port 8883 is the standard MQTT port for TLS/SSL connections
+-   Successful TLS handshake followed by MQTT CONNECT
+-   Certificate verification performed (or bypassed with setInsecure())
+
+**Security Implications:**
+
+-   **Encrypted Transport:** All data transmitted over TLS
+-   **Certificate Validation Required:** Must verify certificate authenticity
+-   **Authentication Recommended:** TLS alone doesn't authenticate clients
+-   **Proper Configuration Essential:** Weak ciphers or expired certificates reduce security
+
+**Example Scan Output:**
+
+```json
+{
+    "ip": "192.168.1.100",
+    "port": 8883,
+    "outcome": {
+        "label": "Connected (8883)",
+        "meaning": "Broker accepts connection over TLS",
+        "evidence_signal": "Successful TLS handshake and MQTT connect",
+        "security_implication": "Potentially safer, must still verify certificate and auth"
+    },
+    "tls_analysis": {
+        "has_tls": true,
+        "cert_valid": true,
+        "security_score": 85,
+        "cert_details": {
+            "common_name": "mqtt.example.com",
+            "tls_version": "TLSv1.3",
+            "self_signed": false
+        }
+    },
+    "security_assessment": {
+        "requires_auth": true,
+        "port_type": "secure"
+    }
+}
+```
+
+**Best Practices Verification:**
+
+-   ✅ TLS 1.2 or higher
+-   ✅ Certificate from trusted CA (not self-signed)
+-   ✅ Certificate not expired
+-   ✅ Strong cipher suite (e.g., AES-256)
+-   ✅ Authentication required
+-   ✅ Client certificate validation (for high-security scenarios)
+
+---
+
+##### 3. Not Authorised / Auth Required - Security Control Active
+
+**Characteristics:**
+
+-   Connection attempt reaches broker
+-   MQTT CONNECT packet sent but rejected
+-   Return code: 5 (Not Authorized) or similar authentication failure
+
+**Security Implications:**
+
+-   **Positive Security Indicator:** Authentication is enforced
+-   **Access Control Active:** Only authorized users can connect
+-   **Credential Validation:** Username/password or certificates required
+
+**Example Scan Output:**
+
+```json
+{
+    "ip": "192.168.1.100",
+    "port": 8883,
+    "outcome": {
+        "label": "Not Authorised / Auth Required",
+        "meaning": "Broker rejects anonymous or invalid credentials",
+        "evidence_signal": "Connection fails with auth response",
+        "security_implication": "Positive security control, authentication is enforced"
+    },
+    "security_assessment": {
+        "requires_auth": true,
+        "anonymous_allowed": false
+    }
+}
+```
+
+**Security Assessment:**
+
+-   This outcome indicates **proper security configuration**
+-   Further testing required with valid credentials
+-   Consider brute-force protection mechanisms
+-   Ensure strong password policies are enforced
+
+---
+
+##### 4. TLS Error - Configuration or Compatibility Issue
+
+**Characteristics:**
+
+-   TCP connection successful
+-   TLS handshake fails before MQTT protocol engagement
+-   Common causes: certificate issues, protocol mismatch, cipher incompatibility
+
+**Common TLS Error Scenarios:**
+
+| Error Type                  | Cause                                        | Resolution                                       |
+| --------------------------- | -------------------------------------------- | ------------------------------------------------ |
+| **Certificate Expired**     | Certificate validity period has passed       | Renew and redeploy certificates                  |
+| **Self-Signed Certificate** | Certificate not signed by trusted CA         | Use CA-signed certificates or add to trust store |
+| **Hostname Mismatch**       | Certificate CN doesn't match server hostname | Update certificate with correct SAN entries      |
+| **Protocol Version**        | Client requires newer TLS version            | Upgrade broker to support TLS 1.2+               |
+| **Cipher Suite Mismatch**   | No common cipher algorithms                  | Configure compatible cipher suites               |
+
+**Example Scan Output:**
+
+```json
+{
+    "ip": "192.168.1.100",
+    "port": 8883,
+    "outcome": {
+        "label": "TLS Error",
+        "meaning": "TLS handshake fails due to certificate or protocol issues",
+        "evidence_signal": "SSL handshake error, certificate mismatch, unsupported TLS",
+        "security_implication": "Misconfiguration risk or incompatible TLS setup"
+    },
+    "tls_analysis": {
+        "has_tls": false,
+        "error": "SSL: CERTIFICATE_VERIFY_FAILED",
+        "security_issues": [
+            "Certificate expired",
+            "Self-signed certificate detected"
+        ]
+    }
+}
+```
+
+**Troubleshooting Steps:**
+
+1. Verify certificate validity dates
+2. Check certificate chain and CA trust
+3. Confirm TLS protocol versions supported
+4. Review cipher suite configurations
+5. Test with TLS debugging tools (e.g., `openssl s_client`)
+
+---
+
+##### 5. Closed / Refused - Port Not Listening
+
+**Characteristics:**
+
+-   TCP connection attempt immediately refused
+-   No service listening on the specified port
+-   Operating system responds with RST (reset) packet
+
+**Security Implications:**
+
+-   **Minimal Attack Surface:** Service not exposed
+-   **Intentional Shutdown:** May indicate broker disabled or moved
+-   **Port Configuration:** Broker may be listening on different port
+-   **Firewall Rule:** Host firewall may be blocking connections
+
+**Example Scan Output:**
+
+```json
+{
+    "ip": "192.168.1.100",
+    "port": 1883,
+    "outcome": {
+        "label": "Closed / Refused",
+        "meaning": "Port is closed or service is not listening",
+        "evidence_signal": "Connection refused quickly",
+        "security_implication": "Lower exposure, MQTT not reachable on that port"
+    },
+    "classification": "closed_or_unreachable"
+}
+```
+
+**Possible Causes:**
+
+-   MQTT broker not installed
+-   Broker service stopped/crashed
+-   Broker configured for different port
+-   Host-based firewall rule
+-   Service intentionally disabled
+
+---
+
+##### 6. Unreachable / Timeout - Network Connectivity Issue
+
+**Characteristics:**
+
+-   No response from target host
+-   Connection attempt times out after 2-5 seconds
+-   Network path may be blocked or host offline
+
+**Security Implications:**
+
+-   **Network Segmentation:** May indicate proper network isolation
+-   **Firewall Protection:** Perimeter or network firewall blocking access
+-   **Host Offline:** Device powered off or disconnected
+-   **ACL/Security Group:** Cloud or network ACLs blocking traffic
+
+**Example Scan Output:**
+
+```json
+{
+    "ip": "192.168.1.100",
+    "port": 1883,
+    "outcome": {
+        "label": "Unreachable / Timeout",
+        "meaning": "Host does not respond or network path blocked",
+        "evidence_signal": "Timeout or unreachable error",
+        "security_implication": "Endpoint likely offline, filtered, or blocked by firewall"
+    },
+    "classification": "unreachable_or_firewalled"
+}
+```
+
+**Diagnostic Checklist:**
+
+-   [ ] Verify target IP address is correct
+-   [ ] Confirm host is powered on and network connected
+-   [ ] Check firewall rules (both host and network)
+-   [ ] Test basic connectivity (ping, traceroute)
+-   [ ] Verify network routing and VLANs
+-   [ ] Check security group/ACL rules (cloud environments)
+
+---
+
+#### 3.2.3 Implementation in Scanner Code
+
+The outcome categorization is implemented in the `categorize_outcome()` function within `scanner.py`:
+
+```python
+def categorize_outcome(result):
+    """
+    Categorize scan results into standard outcome labels.
+    Returns: (outcome_label, meaning, evidence_signal, security_implication)
+    """
+    port = result.get('port')
+    classification = result.get('classification', '')
+    has_tls_analysis = result.get('tls_analysis') and result.get('tls_analysis').get('has_tls')
+    requires_auth = result.get('security_assessment', {}).get('requires_auth', False)
+
+    # Connected (1883) - plaintext connection
+    if port == 1883 and classification == 'open_or_auth_ok':
+        return (
+            "Connected (1883)",
+            "Broker accepts connection on plaintext port",
+            "Successful MQTT connect on port 1883",
+            "High risk, traffic is unencrypted and may allow eavesdropping"
+        )
+
+    # Connected (8883) - TLS connection
+    if port == 8883 and classification == 'open_or_auth_ok' and has_tls_analysis:
+        return (
+            "Connected (8883)",
+            "Broker accepts connection over TLS",
+            "Successful TLS handshake and MQTT connect",
+            "Potentially safer, must still verify certificate and auth"
+        )
+
+    # Not Authorised / Auth Required
+    if classification == 'not_authorized' or requires_auth:
+        return (
+            "Not Authorised / Auth Required",
+            "Broker rejects anonymous or invalid credentials",
+            "Connection fails with auth response",
+            "Positive security control, authentication is enforced"
+        )
+
+    # Additional categorizations for TLS Error, Closed, Unreachable...
+```
+
+#### 3.2.4 Dashboard Visualization
+
+The scan results are displayed in a color-coded table in the web dashboard:
+
+**Color Scheme:**
+
+-   🔴 **Red Badge** - Connected (1883): Critical security risk
+-   🟡 **Yellow Badge** - Connected (8883): Requires verification
+-   🟢 **Green Badge** - Not Authorised: Proper security control
+-   🟠 **Orange Badge** - TLS Error: Configuration issue
+-   ⚪ **Gray Badge** - Closed/Unreachable: Service not accessible
+
+**Dashboard Display Example:**
+
+| IP            | Port | Outcome             | Meaning                                     | Security Risk |
+| ------------- | ---- | ------------------- | ------------------------------------------- | ------------- |
+| 192.168.1.100 | 1883 | 🔴 Connected (1883) | Broker accepts connection on plaintext port | HIGH          |
+| 192.168.1.100 | 8883 | 🟢 Not Authorised   | Broker rejects anonymous credentials        | LOW           |
+| 192.168.1.101 | 1883 | ⚪ Closed / Refused | Port is closed or service not listening     | -             |
+
+---
+
+#### 3.2.5 Security Decision Matrix
+
+Based on scan outcomes, security teams can prioritize remediation:
+
+| Outcome              | Priority    | Immediate Action                                  | Long-term Action                 |
+| -------------------- | ----------- | ------------------------------------------------- | -------------------------------- |
+| **Connected (1883)** | 🔴 Critical | Disable anonymous access, restrict network access | Migrate to port 8883 with TLS    |
+| **Connected (8883)** | 🟡 Medium   | Verify certificate validity and authentication    | Implement client certificates    |
+| **Not Authorised**   | 🟢 Low      | Verify credential management processes            | Monitor for brute-force attempts |
+| **TLS Error**        | 🟠 High     | Fix certificate/configuration issues              | Implement certificate monitoring |
+| **Closed / Refused** | ⚪ Info     | No action if intentional                          | Document expected state          |
+| **Unreachable**      | ⚪ Info     | Verify network connectivity if unexpected         | Update network documentation     |
+
+---
+
+### 3.3 Flask API Server
 
 **File: `mqtt-scanner/app.py`**
 
@@ -469,7 +854,7 @@ if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
 ```
 
-### 3.3 ESP32 Firmware Implementation
+### 3.4 ESP32 Firmware Implementation
 
 The ESP32 code demonstrates mixed security configuration, connecting to both secure and insecure MQTT brokers simultaneously.
 
@@ -585,7 +970,7 @@ void loop() {
 }
 ```
 
-### 3.4 Laravel Dashboard Implementation
+### 3.5 Laravel Dashboard Implementation
 
 #### Database Schema
 
@@ -771,7 +1156,7 @@ function displayResults(results) {
 }
 ```
 
-### 3.5 Routes Configuration
+### 3.6 Routes Configuration
 
 **File: `routes/web.php`**
 
