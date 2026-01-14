@@ -28,6 +28,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/scan', [MqttScannerController::class, 'scan'])->name('scan');
     Route::get('/results', [MqttScannerController::class, 'results'])->name('results');
 
+    // Scan History API routes - Protected
+    Route::get('/api/scan-history', [MqttScannerController::class, 'scanHistory'])->name('api.scan-history');
+    Route::get('/api/scan-history/{id}', [MqttScannerController::class, 'scanHistoryResults'])->name('api.scan-history.results');
+
     // Sensor data routes - Protected
     Route::get('/sensors', [SensorDataController::class, 'index'])->name('sensors.index');
     Route::get('/sensors/{id}', [SensorDataController::class, 'show'])->name('sensors.show');

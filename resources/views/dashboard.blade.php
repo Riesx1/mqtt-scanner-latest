@@ -25,6 +25,12 @@
                         MQTT Scanner
                     </a>
                     @auth
+                        <button onclick="openScanHistoryModal()" class="text-sm text-gray-300 hover:text-white px-3 py-2 rounded-md transition flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Scan History
+                        </button>
                         <a href="{{ route('profile.edit') }}" class="text-sm text-gray-300 hover:text-white px-3 py-2 rounded-md transition">
                             Profile
                         </a>
@@ -329,6 +335,36 @@
             </div>
             <div class="mt-4 pt-4 border-t border-gray-700 text-center text-xs text-gray-400">
                 &copy; {{ date('Y') }} MQTT Security Scanner - Mixed Security Demonstration
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan History Modal -->
+    <div id="scanHistoryModal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-white mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <h2 class="text-2xl font-bold text-white">Scan History</h2>
+                </div>
+                <button onclick="closeScanHistoryModal()" class="text-white hover:text-gray-200 transition">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 overflow-y-auto p-6">
+                <div id="scanHistoryContent" class="space-y-4">
+                    <div class="text-center text-gray-400 py-8">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                        Loading scan history...
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -898,6 +934,156 @@
         document.addEventListener('DOMContentLoaded', function() {
         console.log('DOM fully loaded - Dashboard initialized');
 
+        // Scan History Modal Functions (Accessible globally via window)
+        window.openScanHistoryModal = async function() {
+            document.getElementById('scanHistoryModal').classList.remove('hidden');
+            await window.loadScanHistory();
+        };
+
+        window.closeScanHistoryModal = function() {
+            document.getElementById('scanHistoryModal').classList.add('hidden');
+        };
+
+        window.loadScanHistory = async function() {
+            const content = document.getElementById('scanHistoryContent');
+            content.innerHTML = '<div class="text-center text-gray-400 py-8"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>Loading scan history...</div>';
+
+            try {
+                const response = await fetch('/api/scan-history');
+                const data = await response.json();
+
+                if (response.ok && data.scans) {
+                    window.displayScanHistory(data.scans);
+                } else {
+                    throw new Error(data.error || 'Failed to load scan history');
+                }
+            } catch (error) {
+                console.error('Scan history error:', error);
+                content.innerHTML = `
+                    <div class="text-center text-red-400 py-8">
+                        <svg class="w-12 h-12 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                        </svg>
+                        <p>Error loading scan history: ${error.message}</p>
+                    </div>
+                `;
+            }
+        };
+
+        window.displayScanHistory = function(scans) {
+            const content = document.getElementById('scanHistoryContent');
+
+            if (!scans || scans.length === 0) {
+                content.innerHTML = `
+                    <div class="text-center text-gray-400 py-8">
+                        <svg class="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p class="text-lg font-medium">No scan history found</p>
+                        <p class="text-sm mt-2">Run your first scan to see results here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            content.innerHTML = scans.map(scan => {
+                const statusColor = scan.status === 'completed' ? 'green' : scan.status === 'failed' ? 'red' : 'yellow';
+                const statusIcon = scan.status === 'completed' ? '✓' : scan.status === 'failed' ? '✗' : '⏳';
+
+                return `
+                    <div class="bg-gray-900 border border-gray-700 rounded-lg p-4 hover:border-blue-500 transition">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="text-${statusColor}-400 font-bold text-lg">${statusIcon}</span>
+                                    <h3 class="text-lg font-bold text-white">Scan #${scan.id}</h3>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-${statusColor}-900 text-${statusColor}-300 border border-${statusColor}-700">
+                                        ${scan.status.toUpperCase()}
+                                    </span>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4 mb-3">
+                                    <div>
+                                        <span class="text-gray-400 text-sm">Target:</span>
+                                        <span class="text-blue-400 font-mono ml-2">${scan.target}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-400 text-sm">Started:</span>
+                                        <span class="text-gray-300 ml-2">${new Date(scan.started_at).toLocaleString()}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-400 text-sm">Duration:</span>
+                                        <span class="text-gray-300 ml-2">${scan.duration ? scan.duration.toFixed(2) + 's' : 'N/A'}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-400 text-sm">Results:</span>
+                                        <span class="text-gray-300 ml-2">${scan.total_targets || 0} targets scanned</span>
+                                    </div>
+                                </div>
+
+                                ${scan.status === 'completed' ? `
+                                <div class="flex gap-4 text-sm">
+                                    <span class="text-green-400">
+                                        <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        ${scan.reachable_count || 0} Reachable
+                                    </span>
+                                    <span class="text-red-400">
+                                        <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        ${scan.vulnerable_count || 0} Vulnerable
+                                    </span>
+                                </div>
+                                ` : ''}
+
+                                ${scan.error_message ? `
+                                <div class="mt-2 text-sm text-red-400">
+                                    <span class="font-medium">Error:</span> ${scan.error_message}
+                                </div>
+                                ` : ''}
+                            </div>
+
+                            ${scan.status === 'completed' && scan.result_count > 0 ? `
+                            <button onclick="loadScanById(${scan.id}); closeScanHistoryModal();" class="ml-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                </svg>
+                                View Results
+                            </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        window.loadScanById = async function(scanId) {
+            try {
+                const response = await fetch(`/api/scan-history/${scanId}`);
+                const data = await response.json();
+
+                if (response.ok && data.results) {
+                    displayResults(data.results);
+                    updateSummaryCards(data.results);
+                    document.getElementById('resultsContainer').classList.remove('hidden');
+
+                    // Scroll to results
+                    document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+                } else {
+                    throw new Error(data.error || 'Failed to load scan results');
+                }
+            } catch (error) {
+                console.error('Load scan error:', error);
+                alert('Error loading scan results: ' + error.message);
+            }
+        };
+
+        // Auto-load recent scan results (within 5 minutes) to prove persistence for IT-04
+        loadPreviousResults();
+
         // Update time to Malaysia time on load
         const updateTime = () => {
             const now = new Date();
@@ -993,9 +1179,15 @@
             document.getElementById('statusMessage').textContent = 'Initializing scan...';
             document.getElementById('progressBar').style.width = '0%';
 
-            // Hide previous results
+            // Hide previous results and persistence banner
             document.getElementById('summaryCards').classList.add('hidden');
             document.getElementById('resultsContainer').classList.add('hidden');
+
+            // Remove persistence banner if it exists
+            const persistenceBanner = document.getElementById('persistenceBanner');
+            if (persistenceBanner) {
+                persistenceBanner.remove();
+            }
 
             // Build request body
             const requestBody = {
@@ -1119,6 +1311,78 @@
             }
         }
 
+        // Load previous scan results from database (for IT-04 persistence proof)
+        async function loadPreviousResults() {
+            try {
+                console.log('Checking for recent scan results...');
+                const response = await fetch('{{ route('results') }}');
+                const data = await response.json();
+                console.log('Previous results response:', data);
+
+                if (response.ok && data.results && data.results.length > 0) {
+                    // Check if scan is recent (within last 5 minutes) using scan_date
+                    const scanDate = data.scan_date ? new Date(data.scan_date) : null;
+                    const now = new Date();
+                    const fiveMinutesAgo = new Date(now - 5 * 60 * 1000);
+
+                    const isRecentScan = scanDate && scanDate > fiveMinutesAgo;
+
+                    console.log('Scan date:', scanDate);
+                    console.log('Is recent scan (within 5 min):', isRecentScan);
+
+                    // Only show banner if it's a recent scan (for IT-04 persistence proof)
+                    if (isRecentScan) {
+                        console.log(`Found ${data.results.length} results from recent scan - showing persistence banner`);
+
+                        // Show persistence proof banner (but don't display results table)
+                        if (!document.getElementById('persistenceBanner')) {
+                            const banner = document.createElement('div');
+                            banner.id = 'persistenceBanner';
+                            banner.className = 'mb-4 bg-green-900 border border-green-700 rounded-lg p-4';
+                            banner.innerHTML = `
+                                <div class="flex items-center">
+                                    <svg class="w-6 h-6 text-green-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <div class="flex-1">
+                                        <div class="font-bold text-green-300">✅ Scan Results Stored Successfully</div>
+                                        <div class="text-sm text-green-400 mt-1">
+                                            Your scan results (${data.results.length} records) have been saved to the database.
+                                            ${data.scan_id ? `Scan ID: #${data.scan_id} |` : ''}
+                                            <button onclick="openScanHistoryModal()" class="underline hover:text-green-200 font-semibold">Click here to view Scan History</button>
+                                        </div>
+                                    </div>
+                                    <button onclick="document.getElementById('persistenceBanner').remove()" class="ml-4 text-green-400 hover:text-green-300">
+                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            `;
+                            // Insert banner at the top of the scan form section
+                            const scanForm = document.querySelector('.bg-gradient-to-r.from-blue-600.to-blue-700');
+                            if (scanForm && scanForm.parentNode) {
+                                scanForm.parentNode.insertBefore(banner, scanForm);
+                            }
+                        }
+
+                        // DON'T display results - keep dashboard clean
+                        // User must click "Scan History" button to view results
+                        console.log('✅ Persistence proven: Banner displayed, results remain hidden');
+                        // displayResults(data.results);
+                        // document.getElementById('resultsContainer').classList.remove('hidden');
+                    } else {
+                        console.log('Scan is older than 5 minutes - not auto-loading. Use Scan History to view.');
+                    }
+                } else {
+                    console.log('No previous results found in database');
+                }
+            } catch (error) {
+                console.log('Could not load previous results:', error.message);
+                // Silently fail - this is optional functionality
+            }
+        }
+
         // Display results in table
         function displayResults(results) {
             console.log('displayResults called with:', results);
@@ -1138,6 +1402,58 @@
                 document.getElementById('scanStatus').classList.add('hidden');
                 return;
             }
+
+            // Parse JSON fields if they come as strings (from database)
+            results = results.map(row => {
+                // Parse publishers if it's a string
+                if (typeof row.publishers === 'string') {
+                    try {
+                        row.publishers = JSON.parse(row.publishers);
+                    } catch (e) {
+                        console.warn('Failed to parse publishers:', e);
+                        row.publishers = [];
+                    }
+                }
+
+                // Parse topics if it's a string
+                if (typeof row.topics === 'string') {
+                    try {
+                        row.topics = JSON.parse(row.topics);
+                    } catch (e) {
+                        console.warn('Failed to parse topics:', e);
+                        row.topics = [];
+                    }
+                }
+
+                // Parse outcome if it's a string
+                if (typeof row.outcome === 'string') {
+                    try {
+                        row.outcome = JSON.parse(row.outcome);
+                    } catch (e) {
+                        console.warn('Failed to parse outcome:', e);
+                        row.outcome = {};
+                    }
+                }
+
+                // Parse cert fields if they're strings
+                if (typeof row.cert_subject === 'string') {
+                    try {
+                        row.cert_subject = JSON.parse(row.cert_subject);
+                    } catch (e) {
+                        row.cert_subject = null;
+                    }
+                }
+
+                if (typeof row.cert_issuer === 'string') {
+                    try {
+                        row.cert_issuer = JSON.parse(row.cert_issuer);
+                    } catch (e) {
+                        row.cert_issuer = null;
+                    }
+                }
+
+                return row;
+            });
 
             // Process each connection (port) and extract sensors from publishers
             const sensors = [];
