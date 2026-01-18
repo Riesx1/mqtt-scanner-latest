@@ -61,15 +61,31 @@ The requirements analysis process commenced with comprehensive literature review
 
 The system architecture was designed following a three-tier separation-of-concerns pattern to ensure that frontend modifications would not impact backend scanning logic and that new scanning modules could be integrated without web interface changes. As shown in Figure 3.1 (System Architecture of the MQTT Network Scanning Tool, archi.jpg), the architecture comprises Tier 1 (Scanning Engine) implemented in Python utilizing the paho-mqtt library for protocol interactions, Tier 2 (API Layer) providing RESTful endpoints via Flask framework with X-API-KEY authentication and rate limiting, and Tier 3 (Presentation Layer) implemented using Laravel framework with user authentication, MySQL database persistence for scan history, and result visualization capabilities. The three-tier design enables independent testing of each component and facilitates future distributed deployment configurations where the web dashboard and scanning engine may reside on separate network hosts.
 
+![Figure 3.1: System Architecture of the MQTT Network Scanning Tool](archi.jpg)
+
+**Figure 3.1: System Architecture of the MQTT Network Scanning Tool**
+
 As shown in Figure 3.2 (Use Case Diagram for MQTT Vulnerability Scanner Dashboard, use case.jpg), the system supports three primary actor interactions: the security analyst initiating network scans by submitting target IP addresses or CIDR notation, viewing scan results retrieved from database persistence with severity color-coding and filtering capabilities, and exporting reports in CSV format for offline analysis. The use case model informed the Laravel controller design and database schema specifications.
+
+![Figure 3.2: Use Case Diagram for MQTT Vulnerability Scanner Dashboard](use case.jpg)
+
+**Figure 3.2: Use Case Diagram for MQTT Vulnerability Scanner Dashboard**
 
 ### 3.4.3 CLI Prototype Implementation (FYP1)
 
 A Python virtual environment was established using the venv module to isolate project dependencies from system Python installation, with core dependencies including paho-mqtt version 1.6.1 for MQTT protocol communication and standard library modules for socket-based TCP scanning, SSL certificate inspection, CSV report generation, and IP address parsing. The scanner.py module implemented orchestration logic exposing a scan_target function accepting either single IP addresses or CIDR notation, performing TCP port scanning on ports 1883 and 8883 with three-second timeout values, and invoking MQTT probing logic for discovered open ports. The mqtt_probe.py module implemented connection testing logic that first attempted anonymous MQTT CONNECT operations without credentials, then authenticated CONNECT operations with test credentials if the anonymous attempt failed, and for TLS-enabled brokers on port 8883, captured X.509 certificate details including subject, issuer, and validity period. As shown in Figure 3.5 (Flowchart of Protocol-Aware MQTT Scanning Logic, Flowchart Diagram.drawio.png), the classification logic implemented in categorizer.py evaluated MQTT response codes where code 0 (connection accepted) without credentials classified as "Open Broker" with Critical severity, code 5 (not authorized) classified as "Authentication Required" with Medium severity, TLS handshake failure classified as "TLS Required" with Medium severity, and connection refused classified as "Unreachable" with Informational severity. The flowchart documents the algorithmic decision flow from target input validation through TCP port scanning, anonymous and authenticated connection attempts, error type differentiation, and ultimate classification into security categories.
 
+![Figure 3.5: Flowchart of Protocol-Aware MQTT Scanning Logic](Flowchart Diagram.drawio.png)
+
+**Figure 3.5: Flowchart of Protocol-Aware MQTT Scanning Logic**
+
 ### 3.4.4 Web Integration (FYP2 Laravel + Flask)
 
 The Flask API layer was developed in app.py exposing POST /api/scan endpoint accepting JSON payload with target parameter, validating X-API-KEY from Authorization header, sanitizing target input using regular expressions, invoking the scanner module, and returning JSON array of broker findings. As shown in Figure 3.3 (Sequence Diagram for Scan Execution and Result Retrieval, sequence.png), the scan request workflow begins with the authenticated user submitting a target IP via Laravel dashboard, Laravel constructing HTTP POST request with API key header directed to Flask's /api/scan endpoint, Flask validating credentials and input format before invoking Python scanner's scan_target function, the scanner performing TCP port discovery and MQTT connection probes, Flask serializing results to JSON and returning HTTP 200 response, and Laravel parsing JSON to insert records into the mqtt_scan_results database table before rendering the results table in the dashboard. This sequence diagram illustrates the clear interface contracts between architectural tiers and the synchronous nature of scan execution. The Laravel dashboard implemented using Laravel 10 framework with Breeze authentication scaffolding provided login, registration, and session management functionality. Database migrations created tables for users, mqtt_scan_history storing scan metadata (user_id, target, scan_start_time, scan_completion_time, broker_count_found), and mqtt_scan_results storing individual broker findings (scan_id, ip_address, port, outcome, severity, tls_available, auth_required, certificate_subject, captured_topics). The MqttScannerController implemented index action displaying dashboard with scan initiation form, executeScan action validating CSRF token and target input before sending HTTP POST to Flask API, and exportCsv action generating CSV downloads from database records. Blade templates implemented responsive design using Tailwind CSS framework with results table featuring sortable columns and severity color-coding.
+
+![Figure 3.3: Sequence Diagram for Scan Execution and Result Retrieval](sequence.png)
+
+**Figure 3.3: Sequence Diagram for Scan Execution and Result Retrieval**
 
 ### 3.4.5 Persistence (CSV + Database Scan History)
 
@@ -82,6 +98,10 @@ A hardware testbed infrastructure was deployed to validate scanner operation aga
 ### 3.4.7 Controls and Testing Used
 
 As shown in Figure 3.4 (Activity Diagram for User Scan Workflow, activity.jpg), the user workflow incorporates security controls at multiple interaction points: authentication enforcement through Laravel's auth middleware applied to all dashboard routes requiring valid session credentials, CSRF protection implemented via Laravel's built-in token validation on state-changing POST requests, input validation using Laravel validation rules with regular expression patterns for target field (required|ip|regex:/^[\d.\/]+$/), and server-side sanitization preventing malicious input injection. The activity diagram illustrates parallel swim lanes for user authentication and dashboard navigation, system session validation and CSRF token verification, Flask API credential validation and scanner invocation, and scanner execution of concurrent port scanning operations. Comprehensive functional testing validated all scan outcome classifications across representative broker configurations including network unreachable targets, connection refused scenarios, connection timeout cases, anonymous access success on Docker insecure broker, authentication requirements on Docker secure broker with incorrect credentials, authentication success with correct credentials, and TLS certificate validation extracting details from port 8883 connections. Each test case was executed multiple times to verify consistency, with results documented in test reports confirming correct behavior across diverse network conditions and broker security postures.
+
+![Figure 3.4: Activity Diagram for User Scan Workflow](activity.jpg)
+
+**Figure 3.4: Activity Diagram for User Scan Workflow**
 
 ## 3.5 System Requirements
 
