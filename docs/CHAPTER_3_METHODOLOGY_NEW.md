@@ -2,101 +2,46 @@
 
 ---
 
-## 3.1 Introduction to the Chapter
+## 3.1 Introduction
 
-This chapter illustrates the systematic approach employed in the design, development, testing, and deployment of the Internet of Things Network Scanning Tool for MQTT Devices. The tool addresses the critical gap of lightweight, protocol-aware scanners capable of detecting insecure configurations in MQTT deployments, including unauthenticated access, absence of TLS encryption, unrestricted topic subscriptions, and inadequate authentication enforcement.
+This chapter presents the systematic methodology employed in designing, developing, and validating an MQTT network security scanner for Internet of Things (IoT) environments. The research addressed the identified gap in lightweight, protocol-aware security assessment tools capable of detecting common MQTT misconfigurations including anonymous broker access, absence of Transport Layer Security (TLS) encryption, inadequate authentication enforcement, and unrestricted topic subscriptions.
 
-The methodology encompasses several key components: the rationale behind selecting the Agile-inspired development model, comprehensive explanation of activities performed at each development phase, detailed system design specifications with architectural and behavioral diagrams, hardware and software requirements, budget allocation, and structured project planning spanning two academic semesters (FYP1 and FYP2).
+The methodology encompassed five principal components: evaluation and selection of an appropriate software development model suited to academic constraints and evolving requirements, structured development activities across two academic semesters (FYP1 and FYP2), comprehensive system design incorporating architectural and behavioral modeling, specification of hardware and software requirements with budget considerations, and project planning with risk management strategies. The adopted approach facilitated iterative refinement while maintaining rigorous documentation standards expected in academic research.
 
-This chapter demonstrates how the research objectives defined in Chapter 1 were systematically translated into actionable development steps, ultimately delivering a functional, modular, and user-friendly scanning tool capable of operating in simulated IoT environments while maintaining scalability for future enhancements such as real-time dashboards and cloud-based deployment. The methodological foundation presented here directly supports the implementation documented in Chapter 4 and validates the testing outcomes presented in Chapter 5.
+This chapter demonstrates how the research objectives articulated in Chapter 1 were systematically operationalized into concrete development activities, ultimately yielding a functional three-tier web-based scanning platform comprising a Laravel dashboard for user interaction, a Flask RESTful API for orchestration, and a Python-based MQTT scanner engine for protocol-level assessment. The methodological framework presented herein directly informs the implementation details documented in Chapter 4 and the empirical testing outcomes presented in Chapter 5.
 
 ---
 
-## 3.2 Available Software Development Models
+## 3.2 Software Development Model Evaluation
 
-Before selecting the most appropriate methodology for this project, several established software development models were evaluated based on their suitability for IoT security tool development, academic timeline constraints, and the need for iterative refinement.
+Prior to commencing development activities, five established software development models were evaluated against project-specific criteria including academic timeline constraints (28 weeks across two semesters), requirement volatility expectations, resource availability, and the need for iterative refinement based on testing feedback. The evaluation process considered the Waterfall model, Agile methodology, Spiral model, V-Model, and Prototype model, assessing each against suitability for IoT security tool development in an academic research context.
 
-### 3.2.1 Waterfall Model
+### 3.2.1 Model Descriptions and Comparative Analysis
 
-**Description:**
-The Waterfall model follows a linear sequential approach where each development phase must be completed before progressing to the next. The typical phases include requirements analysis, system design, implementation, testing, deployment, and maintenance. Once a phase is completed, returning to previous phases is difficult and costly.
+**Waterfall Model:**
+The Waterfall model prescribes linear sequential progression through distinct phases—requirements analysis, system design, implementation, testing, deployment, and maintenance—with minimal provision for revisiting completed phases. While its structured nature provides clear milestone definitions suitable for projects with stable, well-understood requirements, the model's rigidity proved incompatible with this research project's exploratory nature. The inability to accommodate mid-development requirement modifications based on supervisor feedback or testing discoveries rendered the Waterfall approach unsuitable.
 
-**Characteristics:**
+**Agile Methodology:**
+Agile advocates iterative and incremental development through short, timeboxed development cycles, emphasizing adaptive planning, continuous stakeholder collaboration, and regular delivery of functional increments. The methodology's inherent flexibility enables accommodation of evolving requirements and incorporation of lessons learned across iterations. Agile's emphasis on working software over comprehensive documentation aligned well with the project's objectives of delivering a functional prototype within academic constraints.
 
-- Highly structured with clearly defined stages
-- Extensive documentation at each phase
-- Suitable for projects with well-defined, stable requirements
-- Limited flexibility for requirement changes
-- Testing occurs only after implementation is complete
+**Spiral Model:**
+The Spiral model integrates iterative development with explicit risk management, requiring formal risk analysis during each iteration cycle. While valuable for large-scale, high-risk commercial projects, the overhead associated with formal risk documentation and analysis activities was deemed excessive for a two-semester academic project where time resources were constrained and formal risk management processes would consume development capacity without commensurate benefit.
 
-**Applicability to This Project:**
-While the Waterfall model's structured approach provides clear milestones, it lacks the flexibility needed for a research-oriented project where requirements may evolve based on testing feedback and supervisor guidance. The inability to accommodate mid-project adjustments made this model unsuitable.
+**V-Model (Verification and Validation):**
+The V-Model extends Waterfall principles by mandating parallel development and testing activities, where each development phase has a corresponding validation phase. The model's emphasis on rigorous testing procedures suits projects requiring high reliability certification. However, its predetermined test specification approach conflicted with this project's research orientation, where testing outcomes informed design decisions rather than validating pre-existing specifications.
 
-### 3.2.2 Agile Methodology
+**Prototype Model:**
+The Prototype model advocates building initial working prototypes to clarify requirements through stakeholder feedback before committing to full-scale development. While prototyping activities were incorporated during FYP1 to validate core scanning concepts, a pure Prototype model approach lacked the structural framework necessary for FYP2's production-grade implementation encompassing web dashboard integration, database persistence, and hardware testbed configuration.
 
-**Description:**
-Agile is an iterative and incremental development approach that emphasizes flexibility, customer collaboration, continuous feedback, and rapid delivery of working software through short development cycles called sprints or iterations. Agile embraces change and prioritizes working software over comprehensive documentation.
+**Table 3.1: Software Development Model Comparison Matrix**
 
-**Characteristics:**
-
-- Iterative development with frequent releases
-- Continuous stakeholder engagement and feedback
-- Adaptive planning allowing requirement changes
-- Emphasis on collaboration and cross-functional teams
-- Regular testing throughout development lifecycle
-- Incremental delivery of functional components
-
-**Applicability to This Project:**
-Agile's flexibility proved highly suitable for this project's evolving nature, enabling systematic progression from FYP1's CLI prototype through FYP2's web-based system with hardware integration. The iterative approach allowed incorporation of lessons learned and supervisor feedback at each development stage.
-
-### 3.2.3 Spiral Model
-
-**Description:**
-The Spiral model combines iterative development with systematic risk management. Each spiral iteration involves four phases: planning, risk analysis, engineering, and evaluation. The model emphasizes identifying and mitigating risks early in the development process.
-
-**Characteristics:**
-
-- Risk-driven approach with explicit risk analysis phases
-- Multiple iterations through development phases
-- Suitable for large-scale, complex, high-risk projects
-- Extensive risk management documentation required
-- Higher cost and complexity than other models
-
-**Applicability to This Project:**
-While the Spiral model's risk management emphasis is valuable, its complexity and extensive documentation requirements were excessive for an academic project. The overhead of formal risk analysis phases would have consumed time better spent on implementation and testing.
-
-### 3.2.4 V-Model (Verification and Validation)
-
-**Description:**
-The V-Model extends the Waterfall approach by emphasizing testing at each development stage. Each development phase has a corresponding testing phase, forming a V-shape where the left side represents specification and design, while the right side represents testing and validation.
-
-**Characteristics:**
-
-- Parallel development and testing activities
-- Emphasis on verification and validation
-- High discipline and rigorous testing procedures
-- Suitable for projects requiring high reliability
-- Limited flexibility for requirement changes
-- High emphasis on documentation
-
-**Applicability to This Project:**
-The V-Model's rigidity and extensive testing documentation requirements made it impractical for this research-oriented project where exploratory testing informed design decisions rather than following predetermined test specifications.
-
-### 3.2.5 Prototype Model
-
-**Description:**
-The Prototype model focuses on building an initial working prototype to gather user feedback before committing to full-scale development. The prototype undergoes refinement based on stakeholder input until requirements are clearly understood, after which the final system is developed.
-
-**Characteristics:**
-
-- Early visualization of system functionality
-- User involvement in requirements refinement
-- Suitable when requirements are unclear initially
-- May lead to incomplete problem analysis
-- Prototypes may be discarded after requirements clarification
-
-**Applicability to This Project:**
-While prototyping was employed during FYP1 to validate scanning concepts, a full Prototype model approach was insufficient. The project required structured development beyond initial prototyping, making a complete Agile framework more appropriate for FYP2's production-grade implementation.
+| Model     | Flexibility                   | Documentation                           | Testing                           | Suitability        | Selection Rationale                                                                          |
+| --------- | ----------------------------- | --------------------------------------- | --------------------------------- | ------------------ | -------------------------------------------------------------------------------------------- |
+| Waterfall | Low - sequential phases       | Heavy - formal at each stage            | Late - after implementation       | Unsuitable         | Inability to accommodate requirement evolution discovered during FYP1 testing                |
+| Agile     | High - iterative cycles       | Moderate - working software prioritized | Continuous - throughout lifecycle | **Selected**       | Flexibility for requirement adaptation, iterative refinement, continuous testing integration |
+| Spiral    | High - risk-driven iterations | Heavy - extensive risk documentation    | Iterative - after each cycle      | Unsuitable         | Excessive overhead for 28-week academic timeline; formal risk analysis impractical           |
+| V-Model   | Low - predetermined testing   | Heavy - parallel documentation          | Structured - phase-specific       | Unsuitable         | Predetermined test approach conflicted with exploratory research methodology                 |
+| Prototype | Moderate - prototype-focused  | Light - minimal                         | Prototype validation only         | Partially suitable | Useful for FYP1 validation but insufficient structural framework for FYP2 expansion          |
 
 ---
 
@@ -253,38 +198,175 @@ Developed comprehensive architecture diagram illustrating:
 
 The architecture diagram provides stakeholders with a high-level understanding of system components and their interactions.
 
+**Figure 3.1: System Architecture Diagram - Three-Tier MQTT Security Scanner**
+
+```mermaid
+graph TB
+    subgraph "Tier 3: User Interface Layer"
+        User[👤 User/Security Analyst]
+        Browser[🌐 Web Browser]
+        Laravel[Laravel 10 Dashboard<br/>• Authentication Laravel Breeze<br/>• Session Management<br/>• CSRF Protection<br/>• Tailwind CSS UI]
+        DB[(MySQL Database<br/>• mqtt_scan_history<br/>• mqtt_scan_results<br/>• users)]
+    end
+
+    subgraph "Tier 2: API Layer"
+        Flask[Flask REST API<br/>• POST /api/scan<br/>• GET /api/results<br/>• API Key Auth<br/>• Rate Limiting 5/min]
+    end
+
+    subgraph "Tier 1: Scanning Engine Layer"
+        Scanner[Python Scanner Core<br/>scanner.py]
+        MQTTProbe[MQTT Probe Module<br/>mqtt_probe.py<br/>• Anonymous Test<br/>• Credential Test<br/>• Topic Subscription]
+        VulnDetect[Vulnerability Detector<br/>vuln_detect.py<br/>• Classification Logic<br/>• Severity Assignment]
+        Reporter[CSV Reporter<br/>reporter.py<br/>• Export Functionality]
+    end
+
+    subgraph "Target Environment"
+        subgraph "Docker Containers"
+            BrokerInsecure[Mosquitto Broker<br/>Port 1883 Insecure<br/>• No Authentication<br/>• No TLS]
+            BrokerSecure[Mosquitto Broker<br/>Port 8883 Secure<br/>• TLS Enabled<br/>• Authentication Required]
+        end
+
+        ESP32[ESP32 IoT Publisher<br/>• DHT11 Temp/Humidity<br/>• LDR Light Sensor<br/>• PIR Motion Sensor]
+    end
+
+    %% User Flow
+    User -->|1. Login| Browser
+    Browser -->|2. HTTP Request| Laravel
+    Laravel -->|3. Session Auth| DB
+
+    %% Scan Initiation
+    Laravel -->|4. POST /api/scan<br/>target=IP/CIDR<br/>API Key| Flask
+    Flask -->|5. Validate & Invoke| Scanner
+
+    %% Scanning Process
+    Scanner -->|6. Port Scan<br/>1883, 8883| BrokerInsecure
+    Scanner -->|6. Port Scan<br/>1883, 8883| BrokerSecure
+    Scanner -->|7. Probe Connections| MQTTProbe
+
+    MQTTProbe -->|8. Anonymous CONNECT| BrokerInsecure
+    MQTTProbe -->|8. TLS CONNECT<br/>with Credentials| BrokerSecure
+
+    BrokerInsecure -.->|9. CONNACK Response| MQTTProbe
+    BrokerSecure -.->|9. CONNACK Response| MQTTProbe
+
+    ESP32 -->|Publish Sensor Data| BrokerInsecure
+    ESP32 -->|Publish Sensor Data<br/>TLS Encrypted| BrokerSecure
+
+    MQTTProbe -->|10. Subscribe #<br/>Capture Topics| BrokerInsecure
+    MQTTProbe -->|10. Subscribe #| BrokerSecure
+
+    %% Analysis & Response
+    MQTTProbe -->|11. Results| VulnDetect
+    VulnDetect -->|12. Classification<br/>• Open Broker<br/>• Auth Required<br/>• TLS Required| Scanner
+    Scanner -->|13. Generate Report| Reporter
+    Reporter -.->|14. CSV Export| User
+
+    %% API Response
+    Scanner -->|15. JSON Results| Flask
+    Flask -->|16. HTTP Response| Laravel
+    Laravel -->|17. Store Results| DB
+    Laravel -->|18. Render Dashboard| Browser
+    Browser -->|19. Display Results| User
+
+    %% Styling
+    classDef tierOne fill:#e1f5ff,stroke:#0288d1,stroke-width:2px
+    classDef tierTwo fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    classDef tierThree fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef target fill:#ffebee,stroke:#c62828,stroke-width:2px
+
+    class Scanner,MQTTProbe,VulnDetect,Reporter tierOne
+    class Flask tierTwo
+    class User,Browser,Laravel,DB tierThree
+    class BrokerInsecure,BrokerSecure,ESP32 target
+```
+
+**Figure 3.1 Key Components:**
+
+- **Tier 3 (Purple):** User-facing layer with Laravel dashboard, authentication, and database
+- **Tier 2 (Orange):** Flask API providing RESTful interface with rate limiting and API key authentication
+- **Tier 1 (Blue):** Core scanning engine with modular Python components
+- **Target Environment (Red):** Testbed with Docker brokers and ESP32 hardware publishers
+
+**Data Flow Summary:**
+
+1. User authenticates via Laravel (session-based)
+2. Scan request sent to Flask API (API key authentication)
+3. Scanner performs port scanning and MQTT probing
+4. Vulnerability classification applied to results
+5. JSON response returned to Laravel
+6. Results stored in MySQL database
+7. Dashboard displays findings with export capability
+
 **3. Flowchart Development (Figure 3.2):**
 
 Created detailed flowcharts representing algorithmic logic:
 
-**Main Scan Workflow Flowchart:**
+**Figure 3.2: Main Scan Workflow Flowchart**
 
+```mermaid
+flowchart TD
+    Start([START]) --> Input[User inputs target IP/CIDR]
+    Input --> Validate{Validate input format<br/>regex check}
+
+    Validate -->|Invalid| ErrorMsg[Display error message]
+    ErrorMsg --> End([END])
+
+    Validate -->|Valid| Parse[Parse IP range]
+    Parse --> LoopIP{For each IP<br/>in range}
+
+    LoopIP -->|Next IP| ScanPort[Scan ports<br/>1883 plaintext<br/>8883 TLS]
+
+    ScanPort --> CheckOpen{Port<br/>open?}
+    CheckOpen -->|No| LoopIP
+
+    CheckOpen -->|Yes| Anonymous[Attempt MQTT CONNECT<br/>Anonymous no credentials]
+
+    Anonymous --> ConnAnon{Connected?}
+
+    ConnAnon -->|Yes| TestSub[Test topic subscription<br/>Subscribe to #]
+    TestSub --> ClassifyOpen[Classify: Open Broker<br/>Severity: CRITICAL]
+    ClassifyOpen --> StoreResult[Store results]
+
+    ConnAnon -->|No| WithCreds[Attempt MQTT CONNECT<br/>with test credentials]
+
+    WithCreds --> ConnCreds{Connected?}
+
+    ConnCreds -->|Yes| ClassifyAuth[Classify: Authenticated Broker<br/>Severity: LOW]
+    ClassifyAuth --> StoreResult
+
+    ConnCreds -->|No| CheckError{Check<br/>error type}
+
+    CheckError -->|TLS Handshake Error| ClassifyTLS[Classify: TLS Required<br/>Severity: MEDIUM]
+    CheckError -->|Connection Refused| ClassifyRefused[Classify: Connection Refused<br/>Severity: INFO]
+    CheckError -->|Timeout| ClassifyTimeout[Classify: Timeout<br/>Severity: INFO]
+    CheckError -->|Network Unreachable| ClassifyUnreach[Classify: Network Unreachable<br/>Severity: INFO]
+
+    ClassifyTLS --> StoreResult
+    ClassifyRefused --> StoreResult
+    ClassifyTimeout --> StoreResult
+    ClassifyUnreach --> StoreResult
+
+    StoreResult --> LoopIP
+
+    LoopIP -->|All IPs done| GenCSV[Generate CSV report]
+    GenCSV --> Display[Display results in dashboard]
+    Display --> End
+
+    style Start fill:#90EE90
+    style End fill:#FFB6C1
+    style ClassifyOpen fill:#FF6B6B
+    style ClassifyAuth fill:#4ECDC4
+    style ClassifyTLS fill:#FFE66D
+    style ErrorMsg fill:#FF6B6B
 ```
-Start
-  → User inputs target IP/CIDR
-  → Validate input format (regex check)
-  → [Valid?]
-     Yes → Parse IP range
-        → For each IP in range:
-           → Scan port 1883 (plaintext)
-           → Scan port 8883 (TLS)
-           → For each open port:
-              → Attempt MQTT CONNECT (anonymous)
-              → [Connected?]
-                 Yes → Test topic subscription
-                    → Classify as "Open Broker"
-                 No → Attempt MQTT CONNECT (with credentials)
-                    → [Connected?]
-                       Yes → Classify as "Authenticated Broker"
-                       No → Check TLS handshake error
-                          → Classify as "TLS Required" or "Connection Refused"
-           → Store results
-        → Generate CSV report
-        → Display results in dashboard
-  → [Invalid?]
-     No → Display error message
-  → End
-```
+
+**Figure 3.2 Key Decision Points:**
+
+- **Input Validation**: Ensures target is valid IP or CIDR notation
+- **Port Scanning**: Tests both plaintext (1883) and TLS (8883) ports
+- **Anonymous Connection**: Primary security check for unauthenticated access
+- **Credential Testing**: Validates authentication requirements
+- **Error Classification**: Categorizes different failure modes (TLS, refused, timeout, unreachable)
 
 This flowchart guided the implementation of `scanner.py` and `mqtt_probe.py` modules.
 
@@ -292,9 +374,76 @@ This flowchart guided the implementation of `scanner.py` and `mqtt_probe.py` mod
 
 Designed UML activity diagrams illustrating concurrent user and system activities:
 
-- **User Activities:** Login → Navigate to dashboard → Enter scan parameters → Initiate scan → View real-time progress → Export results
-- **System Activities (Parallel):** Validate session → Process scan request → Execute concurrent port scans → Aggregate results → Update database → Return JSON response
-- **Decision Points:** Authentication success/failure, broker reachable/unreachable, TLS available/unavailable, subscription allowed/denied
+**Figure 3.3: User and System Activity Diagram**
+
+```mermaid
+stateDiagram-v2
+    [*] --> UserLogin: User accesses system
+
+    state "User Activities" as UserFlow {
+        UserLogin --> EnterCredentials
+        EnterCredentials --> SubmitAuth
+        SubmitAuth --> Dashboard: Auth Success
+        SubmitAuth --> UserLogin: Auth Failed
+
+        Dashboard --> EnterScanParams: Navigate to scan
+        EnterScanParams --> InitiateScan: Click Scan
+        InitiateScan --> ViewProgress: Wait
+        ViewProgress --> ViewResults: Scan Complete
+        ViewResults --> ExportCSV: Click Export
+        ExportCSV --> Dashboard: Continue
+        ViewResults --> Logout: Done
+    }
+
+    state "System Activities" as SystemFlow {
+        SubmitAuth --> ValidateSession
+        ValidateSession --> CheckDB: Query users table
+        CheckDB --> CreateSession: Valid credentials
+        CheckDB --> RejectAuth: Invalid credentials
+
+        InitiateScan --> ProcessRequest
+        ProcessRequest --> ValidateInput: Check IP/CIDR format
+        ValidateInput --> CallFlaskAPI: Valid
+        ValidateInput --> ReturnError: Invalid
+
+        CallFlaskAPI --> ExecuteScanner
+
+        state "Concurrent Scanning" as ParallelScan {
+            ExecuteScanner --> PortScan1883
+            ExecuteScanner --> PortScan8883
+            PortScan1883 --> MQTTProbe1
+            PortScan8883 --> MQTTProbe2
+            MQTTProbe1 --> VulnClassify1
+            MQTTProbe2 --> VulnClassify2
+        }
+
+        VulnClassify1 --> AggregateResults
+        VulnClassify2 --> AggregateResults
+        AggregateResults --> UpdateDatabase
+        UpdateDatabase --> ReturnJSON
+        ReturnJSON --> RenderDashboard
+
+        ExportCSV --> GenerateCSV
+        GenerateCSV --> DownloadFile
+    }
+
+    RejectAuth --> UserLogin
+    RenderDashboard --> ViewResults
+    DownloadFile --> Dashboard
+    Logout --> [*]
+```
+
+**Figure 3.3 Concurrent Activities:**
+
+| User Actions           | System Response                           | Decision Points                |
+| ---------------------- | ----------------------------------------- | ------------------------------ |
+| Login with credentials | Validate session, query database          | Authentication success/failure |
+| Navigate to dashboard  | Load scan history, check authorization    | Session valid/expired          |
+| Enter scan parameters  | Validate IP/CIDR format                   | Input valid/invalid            |
+| Initiate scan          | Call Flask API, execute scanner           | Request accepted/rejected      |
+| Monitor progress       | Concurrent port scanning on 1883/8883     | Broker reachable/unreachable   |
+| View results           | Classify vulnerabilities, update database | TLS available/unavailable      |
+| Export CSV             | Generate report, serve file download      | Subscription allowed/denied    |
 
 The activity diagram clarified user workflows and helped identify required UI elements (progress indicators, result tables, export buttons).
 
@@ -302,23 +451,91 @@ The activity diagram clarified user workflows and helped identify required UI el
 
 Defined hierarchical website navigation structure:
 
+**Figure 3.4: Laravel Dashboard Sitemap**
+
+```mermaid
+graph TB
+    Root(["🏠 MQTT Scanner<br/>Root (/)"])
+
+    subgraph "Public Routes"
+        Home["📄 Home Page<br/>GET /<br/>Landing page with info"]
+        Login["🔐 Login<br/>GET/POST /login<br/>Laravel Breeze Auth"]
+        Register["📝 Register<br/>GET/POST /register<br/>New user signup"]
+    end
+
+    subgraph "Protected Routes [auth middleware]"
+        Dashboard["📊 Dashboard<br/>GET /dashboard<br/>Main scan interface"]
+        Profile["👤 Profile<br/>GET /profile<br/>User settings"]
+        ScanHistory["📜 Scan History<br/>GET /scans/history<br/>Previous results"]
+        Logout["🚪 Logout<br/>POST /logout<br/>End session"]
+    end
+
+    subgraph "Dashboard Features"
+        ScanForm["🎯 Scan Initiation Form<br/>Enter IP/CIDR target"]
+        Progress["⏳ Real-time Progress<br/>WebSocket/AJAX updates"]
+        Results["📋 Results Table<br/>Sortable, filterable findings"]
+        Export["💾 CSV Export<br/>Download scan report"]
+    end
+
+    subgraph "Profile Features"
+        UserInfo["ℹ️ User Information<br/>Name, email, role"]
+        APIKey["🔑 API Key Management<br/>Generate/revoke keys"]
+        Settings["⚙️ Account Settings<br/>Password, preferences"]
+    end
+
+    subgraph "API Routes [api/]"
+        APIScan["🔍 POST /api/scan<br/>Initiate scan via API"]
+        APIResults["📊 GET /api/results<br/>Retrieve scan data JSON"]
+    end
+
+    Root --> Home
+    Root --> Login
+    Root --> Register
+
+    Login -->|Auth Success| Dashboard
+    Register -->|Account Created| Login
+
+    Dashboard --> ScanForm
+    Dashboard --> Progress
+    Dashboard --> Results
+    Dashboard --> Export
+
+    Dashboard --> ScanHistory
+    Dashboard --> Profile
+    Dashboard --> Logout
+
+    Profile --> UserInfo
+    Profile --> APIKey
+    Profile --> Settings
+
+    ScanForm -->|POST /scan| APIScan
+    APIScan --> Progress
+
+    Logout --> Home
+
+    style Root fill:#E8F5E9
+    style Dashboard fill:#FFF9C4
+    style Profile fill:#F3E5F5
+    style APIScan fill:#FFE0B2
+    style APIResults fill:#FFE0B2
+
+    classDef public fill:#E3F2FD,stroke:#1976D2,stroke-width:2px
+    classDef protected fill:#FFF3E0,stroke:#F57C00,stroke-width:2px
+    classDef api fill:#FCE4EC,stroke:#C2185B,stroke-width:2px
+
+    class Home,Login,Register public
+    class Dashboard,Profile,ScanHistory,Logout protected
+    class APIScan,APIResults api
 ```
-Root (/)
-├── Home (/) - Public landing page
-├── Login (/login) - Authentication page
-├── Register (/register) - User registration
-├── Dashboard (/dashboard) [Protected Route]
-│   ├── Scan Initiation Form
-│   ├── Real-time Scan Progress
-│   ├── Results Table (sortable, filterable)
-│   ├── Scan History (previous scans)
-│   └── Export Options (CSV download)
-├── Profile (/profile) [Protected Route]
-│   ├── User Information
-│   ├── API Key Management
-│   └── Account Settings
-└── Logout (/logout) [Protected Action]
-```
+
+**Figure 3.4 Route Protection Summary:**
+
+| Route Type           | Middleware      | Access Control                           |
+| -------------------- | --------------- | ---------------------------------------- |
+| **Public Routes**    | None            | Anyone can access                        |
+| **Protected Routes** | `auth`          | Requires active Laravel session          |
+| **API Routes**       | `api.key`       | Requires valid API key header            |
+| **Admin Routes**     | `auth`, `admin` | Requires admin role (future enhancement) |
 
 The sitemap ensured comprehensive route coverage during Laravel development and provided basis for navigation menu implementation.
 
@@ -326,15 +543,92 @@ The sitemap ensured comprehensive route coverage during Laravel development and 
 
 Conducted threat modeling using STRIDE framework to identify security risks and corresponding mitigations:
 
-| Threat Category            | Specific Threat                  | Risk Level | Mitigation Strategy                                     |
-| -------------------------- | -------------------------------- | ---------- | ------------------------------------------------------- |
-| **Spoofing**               | Unauthorized access to dashboard | High       | Laravel Breeze authentication with session management   |
-| **Tampering**              | SQL injection attacks            | High       | Laravel Eloquent ORM with parameterized queries         |
-| **Repudiation**            | Untracked scan activities        | Medium     | Database logging of all scan operations with timestamps |
-| **Information Disclosure** | Exposure of MQTT credentials     | Medium     | Credential encryption in database, HTTPS for dashboard  |
-| **Denial of Service**      | Scanner API abuse                | Medium     | Rate limiting (5 scans per minute per user)             |
-| **Elevation of Privilege** | Broken access control            | High       | Laravel middleware protecting all authenticated routes  |
-| **CSRF Attacks**           | Cross-site request forgery       | High       | CSRF tokens on all state-changing forms                 |
+**Figure 3.5: STRIDE Threat Model Diagram**
+
+```mermaid
+graph LR
+    subgraph "System Assets"
+        WebDash["Laravel Dashboard<br/>User Interface"]
+        FlaskAPI["Flask API<br/>Scan Engine"]
+        Database["MySQL Database<br/>Scan Results"]
+        Scanner["Python Scanner<br/>MQTT Probes"]
+    end
+
+    subgraph "S - Spoofing Threats"
+        T1["❌ Threat: Unauthorized<br/>dashboard access"]
+        M1["✅ Mitigation:<br/>Laravel Breeze<br/>Session Auth"]
+        T1 -.->|Risk: HIGH| WebDash
+        M1 -.->|Protects| WebDash
+    end
+
+    subgraph "T - Tampering Threats"
+        T2["❌ Threat: SQL Injection<br/>Database manipulation"]
+        M2["✅ Mitigation:<br/>Eloquent ORM<br/>Parameterized queries"]
+        T2 -.->|Risk: HIGH| Database
+        M2 -.->|Protects| Database
+    end
+
+    subgraph "R - Repudiation Threats"
+        T3["❌ Threat: Untracked<br/>scan activities"]
+        M3["✅ Mitigation:<br/>Database logging<br/>Timestamps"]
+        T3 -.->|Risk: MEDIUM| Scanner
+        M3 -.->|Protects| Scanner
+    end
+
+    subgraph "I - Information Disclosure"
+        T4["❌ Threat: MQTT<br/>credential exposure"]
+        M4["✅ Mitigation:<br/>DB encryption<br/>HTTPS only"]
+        T4 -.->|Risk: MEDIUM| Database
+        M4 -.->|Protects| Database
+    end
+
+    subgraph "D - Denial of Service"
+        T5["❌ Threat: Scanner<br/>API abuse"]
+        M5["✅ Mitigation:<br/>Rate limiting<br/>5 scans/min"]
+        T5 -.->|Risk: MEDIUM| FlaskAPI
+        M5 -.->|Protects| FlaskAPI
+    end
+
+    subgraph "E - Elevation of Privilege"
+        T6["❌ Threat: Broken<br/>access control"]
+        M6["✅ Mitigation:<br/>Auth middleware<br/>Route protection"]
+        T6 -.->|Risk: HIGH| WebDash
+        M6 -.->|Protects| WebDash
+
+        T7["❌ Threat: CSRF<br/>forged requests"]
+        M7["✅ Mitigation:<br/>CSRF tokens<br/>on all forms"]
+        T7 -.->|Risk: HIGH| WebDash
+        M7 -.->|Protects| WebDash
+    end
+
+    style T1 fill:#FFCDD2,stroke:#C62828
+    style T2 fill:#FFCDD2,stroke:#C62828
+    style T3 fill:#FFE082,stroke:#F57C00
+    style T4 fill:#FFE082,stroke:#F57C00
+    style T5 fill:#FFE082,stroke:#F57C00
+    style T6 fill:#FFCDD2,stroke:#C62828
+    style T7 fill:#FFCDD2,stroke:#C62828
+
+    style M1 fill:#C8E6C9,stroke:#2E7D32
+    style M2 fill:#C8E6C9,stroke:#2E7D32
+    style M3 fill:#C8E6C9,stroke:#2E7D32
+    style M4 fill:#C8E6C9,stroke:#2E7D32
+    style M5 fill:#C8E6C9,stroke:#2E7D32
+    style M6 fill:#C8E6C9,stroke:#2E7D32
+    style M7 fill:#C8E6C9,stroke:#2E7D32
+```
+
+**Figure 3.5 STRIDE Analysis Summary:**
+
+| Threat Category            | Specific Threat                  | Risk Level | Mitigation Strategy                                     | Implementation Status |
+| -------------------------- | -------------------------------- | ---------- | ------------------------------------------------------- | --------------------- |
+| **S**poofing               | Unauthorized access to dashboard | 🔴 High    | Laravel Breeze authentication with session management   | ✅ Implemented        |
+| **T**ampering              | SQL injection attacks            | 🔴 High    | Laravel Eloquent ORM with parameterized queries         | ✅ Implemented        |
+| **R**epudiation            | Untracked scan activities        | 🟡 Medium  | Database logging of all scan operations with timestamps | ✅ Implemented        |
+| **I**nformation Disclosure | Exposure of MQTT credentials     | 🟡 Medium  | Credential encryption in database, HTTPS for dashboard  | ✅ Implemented        |
+| **D**enial of Service      | Scanner API abuse                | 🟡 Medium  | Rate limiting (5 scans per minute per user)             | ✅ Implemented        |
+| **E**levation of Privilege | Broken access control            | 🔴 High    | Laravel middleware protecting all authenticated routes  | ✅ Implemented        |
+| **E**levation of Privilege | Cross-site request forgery       | 🔴 High    | CSRF tokens on all state-changing forms                 | ✅ Implemented        |
 
 The threat model informed security implementation priorities during FYP2's security hardening phase.
 
@@ -798,77 +1092,60 @@ Commercial IoT security scanning solutions typically cost thousands of Malaysian
 | 12-13 | Testing      | Comprehensive Testing, Performance Tuning       | Testing Complete    | ✅ Completed |
 | 14    | Finalization | Documentation, Report Writing, Presentation     | Project Completed   | ✅ Completed |
 
-### 3.6.3 Work Breakdown Structure (WBS)
+---
 
-```
-MQTT Security Scanner Project
-│
-├── 1.0 Project Initiation (FYP1 - Week 1-2)
-│   ├── 1.1 Literature Review
-│   ├── 1.2 Requirements Derivation
-│   ├── 1.3 Gantt Chart Creation
-│   └── 1.4 WBS Development
-│
-├── 2.0 Design Phase (FYP1 - Week 3-5)
-│   ├── 2.1 System Architecture Diagram
-│   ├── 2.2 Flowchart Design
-│   ├── 2.3 Activity Diagram
-│   ├── 2.4 Sitemap Design
-│   └── 2.5 Threat Model Diagram
-│
-├── 3.0 CLI Prototype (FYP1 - Week 6-8)
-│   ├── 3.1 Python Environment Setup
-│   ├── 3.2 Scanner Core Development
-│   ├── 3.3 CSV Reporting Module
-│   └── 3.4 Initial Testing
-│
-├── 4.0 Web Interface (FYP2 - Week 1-6)
-│   ├── 4.1 Flask API Development
-│   ├── 4.2 Laravel Dashboard
-│   ├── 4.3 Database Schema
-│   └── 4.4 Integration Testing
-│
-├── 5.0 Hardware Integration (FYP2 - Week 7-8)
-│   ├── 5.1 Docker Broker Setup
-│   ├── 5.2 ESP32 Firmware Development
-│   ├── 5.3 Sensor Wiring
-│   └── 5.4 Network Configuration
-│
-├── 6.0 Security Hardening (FYP2 - Week 9-11)
-│   ├── 6.1 Authentication Implementation
-│   ├── 6.2 Input Validation
-│   ├── 6.3 CSRF Protection
-│   ├── 6.4 Rate Limiting
-│   └── 6.5 Security Testing
-│
-├── 7.0 Testing and Validation (FYP2 - Week 12-13)
-│   ├── 7.1 Functional Testing
-│   ├── 7.2 Integration Testing
-│   ├── 7.3 Hardware-in-the-Loop Testing
-│   └── 7.4 Performance Testing
-│
-└── 8.0 Documentation and Deployment (FYP2 - Week 14)
-    ├── 8.1 Technical Documentation
-    ├── 8.2 Report Writing
-    ├── 8.3 Presentation Preparation
-    └── 8.4 Demo Video Recording
-```
+## 3.7 Deployment Architecture
 
-### 3.6.4 Risk Management
+This section describes the deployment configuration employed for the MQTT Network Scanning Tool prototype, detailing how the multi-tier architecture was instantiated across development and demonstration environments. The deployment strategy reflects the modular design established in Phase 2, ensuring clear separation between presentation logic, application orchestration, and scanning execution.
 
-| Risk ID | Risk Description                            | Probability | Impact | Mitigation Strategy                                                     |
-| ------- | ------------------------------------------- | ----------- | ------ | ----------------------------------------------------------------------- |
-| R1      | Hardware component failure (ESP32, sensors) | Low         | Medium | Purchased backup components; tested thoroughly before integration       |
-| R2      | Docker installation issues on Windows       | Medium      | Medium | Prepared alternative: Native Mosquitto installation                     |
-| R3      | Laravel-Flask integration challenges        | Medium      | High   | Developed comprehensive API documentation; implemented error handling   |
-| R4      | TLS certificate validation errors           | High        | Medium | Created self-signed certificates; implemented flexible validation       |
-| R5      | Requirement changes during FYP2             | Medium      | Low    | Agile methodology accommodated changes through iterative sprints        |
-| R6      | Time constraints for FYP2 completion        | Medium      | High   | Detailed Gantt chart; weekly milestone tracking; buffer weeks allocated |
-| R7      | ESP32 WiFi connectivity issues              | Medium      | Medium | Tested multiple WiFi configurations; documented troubleshooting steps   |
+### 3.7.1 Deployment Architecture Overview
+
+The system was deployed following a distributed multi-tier model where each architectural component occupied distinct execution contexts. The Laravel web dashboard served as the presentation layer, hosted on the development workstation and accessible via web browser on localhost port 8000. This component handled user authentication, session management, and result visualization through MySQL database integration. The Flask API layer, executing as a separate Python process on localhost port 5000, provided RESTful endpoints for scan invocation and functioned as the intermediary between the web interface and the core scanning logic. The Python MQTT scanner operated as a library module imported by Flask, executing scanning operations when invoked through API requests. This architectural separation was deliberately chosen to enforce modularity, enabling independent testing of each tier, facilitating future migration to distributed deployment (e.g., cloud-hosted dashboard with on-premises scanning engine), and maintaining clear boundaries between user interface concerns and protocol-level security assessment logic.
+
+Persistence mechanisms were distributed across both tiers: the Flask layer generated CSV reports containing raw scan output with fields including IP address, port, connection status, TLS availability, authentication requirements, and timestamp metadata; concurrently, the Laravel layer stored scan metadata and categorized findings in MySQL database tables (`mqtt_scan_history` for scan sessions, `mqtt_scan_results` for individual broker findings), enabling historical analysis and dashboard-based result filtering. This dual-storage approach provided both machine-readable structured output (CSV for external analysis) and database-backed querying capabilities for the web interface.
+
+### 3.7.2 Target Broker Environment Configuration
+
+The demonstration and testing environment comprised both containerized brokers and physical network devices to simulate realistic IoT deployment scenarios. Docker-based Eclipse Mosquitto brokers were deployed on the localhost environment: an insecure broker instance on port 1883 configured without authentication or TLS to represent misconfigured production deployments, and a secure broker instance on port 8883 configured with X.509 certificate-based TLS encryption and username/password authentication to represent properly hardened installations. Additionally, a physical MQTT broker device accessible at IP address 192.168.100.57 was incorporated into the testing infrastructure to validate scanner functionality against real-world network-accessible brokers beyond localhost simulation. This hybrid testbed configuration ensured comprehensive validation across diverse security postures: unauthenticated plaintext communication (port 1883 localhost), authenticated encrypted communication (port 8883 localhost), and remote network-accessible brokers (192.168.100.57).
+
+To generate realistic IoT telemetry traffic during demonstrations, an ESP32 microcontroller was programmed to publish sensor readings to the Docker broker instances. The ESP32 firmware integrated DHT11 temperature/humidity sensor data, LDR photoresistor light measurements, and PIR motion detection outputs, publishing these values to distinct MQTT topics at three-second intervals. Sensor data from DHT11 and LDR modules were transmitted to the secure broker (port 8883) over TLS-encrypted connections, while PIR motion events were published to the insecure broker (port 1883) in plaintext, deliberately simulating mixed-security IoT deployments commonly encountered in production environments. This configuration enabled demonstration of the scanner's capability to identify active MQTT topics, capture live message payloads during subscription tests, and differentiate between encrypted and unencrypted data channels.
+
+**Table 3.6: Deployment Configuration Summary**
+
+| Component                   | Host/Environment                    | Ports/Endpoints                                                                      | Storage Used                                                              | Purpose                                                                                                                     |
+| --------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Laravel Dashboard           | Localhost development machine       | HTTP port 8000                                                                       | MySQL database (`mqtt_scan_history`, `mqtt_scan_results`, `users` tables) | Web-based user interface providing authentication, scan initiation forms, result visualization, and scan history management |
+| Flask API                   | Localhost development machine       | HTTP port 5000, endpoints: `/api/scan` (POST), `/api/results` (GET)                  | CSV files in `mqtt-scanner/storage/` directory                            | RESTful API layer receiving scan requests from Laravel, invoking Python scanner, returning JSON responses                   |
+| Python MQTT Scanner         | Invoked by Flask as imported module | N/A (library invocation)                                                             | Temporary scan state in memory, CSV output via Flask layer                | Core scanning engine performing port scanning, MQTT connection probing, vulnerability classification                        |
+| MySQL Database              | Localhost development machine       | TCP port 3306                                                                        | Persistent relational storage on local filesystem                         | Stores user accounts, scan history metadata, categorized vulnerability findings for dashboard queries                       |
+| Docker Mosquitto (Insecure) | Docker container on localhost       | MQTT port 1883 (plaintext, no authentication)                                        | In-memory message retention only                                          | Simulated vulnerable broker for testing anonymous access detection                                                          |
+| Docker Mosquitto (Secure)   | Docker container on localhost       | MQTT port 8883 (TLS with self-signed certificates, username/password authentication) | In-memory message retention only                                          | Simulated hardened broker for testing TLS and authentication detection                                                      |
+| Physical Broker Device      | Network-accessible device           | IP 192.168.100.57, MQTT port 1883/8883                                               | Device-dependent                                                          | Real-world broker target for validating scanner operation beyond localhost                                                  |
+| ESP32 IoT Publisher         | WiFi-connected microcontroller      | Publishes to Docker brokers via MQTT                                                 | Sensor readings stored in firmware variables                              | Generates realistic telemetry traffic (DHT11, LDR, PIR sensors) to simulate active IoT deployments                          |
+
+### 3.7.3 Laravel-Flask Integration Mechanism
+
+The integration between the Laravel dashboard and Flask API was implemented using HTTP-based RESTful communication with JSON payloads. When an authenticated user submitted a scan request through the Laravel web interface (specifying target IP address or CIDR notation), the Laravel controller (`MqttScannerController`) constructed an HTTP POST request to the Flask API endpoint `http://localhost:5000/api/scan` with JSON body containing the target parameter. Authentication between Laravel and Flask was enforced through a static API key transmitted in the HTTP `Authorization` header, configured identically in both Laravel's environment variables and Flask's configuration file, providing service-to-service authentication independent of browser session cookies.
+
+Upon receiving the scan request, the Flask API validated the API key, performed input sanitization on the target parameter (regex validation for IP/CIDR format), and invoked the Python scanner module's `run_scan()` function with the validated target. The scanner executed port discovery, MQTT connection probing, and vulnerability classification logic, aggregating results into a structured Python dictionary. Flask serialized this dictionary into JSON format and returned an HTTP 200 response to Laravel containing arrays of discovered brokers with fields including IP address, port number, connection outcome (e.g., "Open Broker", "Authentication Required", "TLS Required"), severity classification, and captured MQTT topics. Simultaneously, Flask persisted raw scan output to CSV files in the `storage/` directory for offline analysis.
+
+The Laravel controller parsed the JSON response, extracted individual broker findings, and performed batch insertion into the MySQL `mqtt_scan_results` table with foreign key references to a newly created scan session record in `mqtt_scan_history`. The dashboard view then rendered scan results in a sortable HTML table, color-coding severity levels (critical findings in red, warnings in yellow, informational in blue) and providing CSV export functionality through a download link. This request-response cycle maintained clear separation of concerns: Laravel handled user interaction and persistent storage; Flask managed API contract enforcement and scanner orchestration; Python scanner focused exclusively on MQTT protocol assessment logic.
+
+### 3.7.4 Deployment Execution Procedures
+
+Deployment of the complete system for demonstration purposes required sequential initialization of dependent services. The deployment process commenced with Docker container initialization, executing `docker-compose up -d` in the `mqtt-brokers/` directory to launch both Mosquitto broker instances (insecure on port 1883, secure on port 8883) with their respective configuration files specifying authentication requirements and TLS certificate paths. Database preparation followed, involving MySQL server startup and execution of Laravel migration scripts (`php artisan migrate`) to create the required database schema including users, scan history, and results tables. The Flask API server was subsequently activated by navigating to the `mqtt-scanner/` directory, activating the Python virtual environment, and executing `python app.py`, which initiated the Flask development server listening on port 5000. Finally, the Laravel development server was started using `php artisan serve` from the project root directory, launching the web dashboard on port 8000.
+
+Optional ESP32 integration for live telemetry demonstration required uploading the firmware sketch (`esp32_mixed_security.ino`) to the microcontroller via USB, ensuring WiFi credentials in the source code matched the local network, and verifying sensor connections (DHT11 on GPIO 4, LDR on GPIO 34, PIR on GPIO 27). Once powered, the ESP32 automatically connected to the specified WiFi network and commenced publishing sensor readings to the configured broker endpoints. Verification of end-to-end deployment involved accessing the Laravel dashboard at `http://localhost:8000`, authenticating with seeded user credentials, initiating a scan targeting `127.0.0.1` (localhost Docker brokers) or `192.168.100.57` (physical broker), and confirming that scan results populated the dashboard table with accurate vulnerability classifications.
+
+### 3.7.5 Deployment Outcomes and Chapter Linkage
+
+The deployment architecture successfully demonstrated the system's capability to operate as an integrated multi-tier application while maintaining the modularity established during design phases. The separation between Laravel, Flask, and Python scanner components validated the architectural decision to enforce tier independence, as each component could be tested, debugged, and enhanced in isolation without requiring modifications to dependent layers. The hybrid testbed configuration incorporating both Docker containers and physical network devices provided comprehensive validation coverage, confirming that the scanner functioned correctly across localhost simulation environments and real-world network-accessible brokers.
+
+This deployment methodology directly supports Chapter 4 (Implementation), which provides detailed examination of source code structure, database schema definitions, API endpoint implementations, and ESP32 firmware logic that underpin the deployed system. The concrete configuration parameters documented in this section (ports, endpoints, storage locations, broker addresses) correspond to the implementation artifacts discussed in Chapter 4's code walkthroughs. Furthermore, the deployment environment established here served as the foundation for Chapter 5 (Testing and Results), where systematic functional testing, security validation, and performance measurement were conducted against the deployed broker testbed and integrated web dashboard, producing empirical evidence of the scanner's detection capabilities and classification accuracy across diverse MQTT security configurations.
 
 ---
 
-## 3.7 Summary and Conclusion
+## 3.8 Summary and Conclusion
 
 This chapter has presented a comprehensive methodology for the design, development, and deployment of the MQTT Network Scanning Tool for IoT security assessment. The systematic approach demonstrated how research objectives were translated into actionable development phases, ultimately delivering a functional, cost-effective, and academically rigorous solution.
 
