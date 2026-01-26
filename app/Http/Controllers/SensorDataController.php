@@ -317,4 +317,140 @@ class SensorDataController extends Controller
 
         return $recommendations;
     }
+
+    /**
+     * Get comprehensive security analysis with $SYS topics data
+     */
+    public function securityAnalysis()
+    {
+        try {
+            // Call Flask API to get comprehensive scan results with broker_info
+            $flaskBase = env('FLASK_BASE', 'http://127.0.0.1:5000');
+            $apiKey = env('FLASK_API_KEY', 'my-very-secret-flask-key-CHANGEME');
+
+            $response = Http::timeout(30)->withHeaders([
+                'X-API-KEY' => $apiKey,
+            ])->post($flaskBase . '/api/scan', [
+                        'target' => '127.0.0.1',
+                        'listen_duration' => 3,
+                        'capture_all_topics' => false, // Only $SYS topics
+                    ]);
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Flask scanner backend not available',
+                    'help' => true
+                ], 500);
+            }
+
+            $data = $response->json();
+            $results = $data['results'] ?? [];
+
+            // Format results for security modal
+            $secureBroker = null;
+            $insecureBroker = null;
+
+            foreach ($results as $result) {
+                $port = $result['port'] ?? 0;
+                $brokerData = $this->formatBrokerForSecurityModal($result);
+
+                if ($port == 8883) {
+                    $secureBroker = $brokerData;
+                } elseif ($port == 1883) {
+                    $insecureBroker = $brokerData;
+                }
+            }
+
+            return response()->json([
+                'status' => 'ok',
+                'data' => [
+                    'secure_broker' => $secureBroker,
+                    'insecure_broker' => $insecureBroker
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to connect to Flask scanner: ' . $e->getMessage(),
+                'help' => true
+            ], 500);
+        }
+    }
+
+    /**
+     * Format broker result for security modal with $SYS topics data
+     */
+    private function formatBrokerForSecurityModal($result)
+    {
+        $port = $result['port'] ?? 0;
+        $hasTls = ($port == 8883) || ($result['tls'] ?? false);
+        $classification = $result['classification'] ?? 'unknown';
+        $brokerInfo = $result['broker_info'] ?? [];
+        $certInfo = $result['cert_info'] ?? [];
+        $publishers = $result['publishers'] ?? [];
+
+        // Extract $SYS topics data from broker_info
+        $sysTopicCount = $brokerInfo['sys_count'] ?? 0;
+        $regularTopicCount = $brokerInfo['regular_count'] ?? 0;
+        $retainedCount = count($brokerInfo['retained_topics'] ?? []);
+        $brokerError = $brokerInfo['error'] ?? null;
+
+        // Extract topics list
+        $sysTopics = $brokerInfo['sys_topics'] ?? [];
+        $regularTopics = $brokerInfo['regular_topics'] ?? [];
+        $allTopics = array_merge(array_keys($sysTopics), array_keys($regularTopics));
+
+        return [
+            'ip' => $result['ip'] ?? '127.0.0.1',
+            'port' => $port,
+            'tls_enabled' => $hasTls,
+            'result' => $result['result'] ?? 'connected',
+            'classification' => $classification,
+            'risk_level' => $this->calculateRiskLevel($port, $hasTls, $classification),
+            'timestamp' => $result['timestamp'] ?? now()->toIso8601String(),
+
+            // $SYS Topics & Broker Information
+            'sys_topic_count' => $sysTopicCount,
+            'regular_topic_count' => $regularTopicCount,
+            'retained_count' => $retainedCount,
+            'broker_error' => $brokerError,
+
+            // Topics
+            'topics' => $allTopics,
+            'topic_count' => count($allTopics),
+
+            // Publishers data
+            'publishers' => array_map(function ($pub) {
+                return [
+                    'topic' => $pub['topic'] ?? 'Unknown',
+                    'payload_size' => isset($pub['payload']) ? strlen($pub['payload']) : 0,
+                    'qos' => $pub['qos'] ?? 0,
+                    'retained' => $pub['retained'] ?? false,
+                    'note' => $pub['note'] ?? null
+                ];
+            }, $publishers),
+            'publisher_count' => count($publishers),
+
+            // Subscribers (if available)
+            'subscribers' => [],
+            'subscriber_count' => 0,
+
+            // Certificate info
+            'cert_info' => $certInfo,
+
+            // Security assessment
+            'security_issues' => $this->identifySecurityIssues([
+                'port' => $port,
+                'tls' => $hasTls,
+                'classification' => $classification,
+                'publishers' => $publishers
+            ]),
+            'recommendations' => $this->generateRecommendations([
+                'tls' => $hasTls,
+                'classification' => $classification
+            ], $hasTls ? 'secure' : 'insecure')
+        ];
+    }
 }

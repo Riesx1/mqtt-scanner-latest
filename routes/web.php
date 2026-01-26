@@ -35,6 +35,7 @@ Route::middleware(['auth'])->group(function () {
     // Sensor data routes - Protected
     Route::get('/sensors', [SensorDataController::class, 'index'])->name('sensors.index');
     Route::get('/sensors/{id}', [SensorDataController::class, 'show'])->name('sensors.show');
+    Route::get('/sensors/security-analysis', [SensorDataController::class, 'securityAnalysis'])->name('sensors.security-analysis');
 
     // Profile routes (provided by Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

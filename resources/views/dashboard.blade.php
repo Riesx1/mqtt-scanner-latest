@@ -828,6 +828,47 @@
         </div>
     </div>
 
+    ${(() => {
+        // Debug: Log sensor object to console
+        console.log('🔍 DEBUG: Sensor object:', sensor);
+        console.log('🔍 sys_topic_count:', sensor.sys_topic_count);
+        console.log('🔍 regular_topic_count:', sensor.regular_topic_count);
+        console.log('🔍 retained_count:', sensor.retained_count);
+
+        // Extract $SYS topics data from sensor
+        const sysTopicCount = sensor.sys_topic_count;
+        const regularTopicCount = sensor.regular_topic_count;
+        const retainedCount = sensor.retained_count;
+        const brokerError = sensor.broker_error || null;
+
+        // Always show this section (even if data is missing/0)
+        const hasData = sysTopicCount !== undefined && sysTopicCount !== null;
+        return `
+    <div class="bg-gray-900 rounded p-4 border-l-4 border-teal-500">
+        <div class="font-bold text-white mb-3">🖥️ BROKER INFORMATION ($SYS TOPICS)</div>
+        <div class="grid grid-cols-3 gap-3 mb-3">
+            <div class="bg-blue-900 bg-opacity-50 rounded p-3 text-center border border-blue-500">
+                <div class="text-2xl font-bold text-blue-300">${hasData ? sysTopicCount : 'N/A'}</div>
+                <div class="text-xs text-blue-200 mt-1">$SYS Topics</div>
+            </div>
+            <div class="bg-green-900 bg-opacity-50 rounded p-3 text-center border border-green-500">
+                <div class="text-2xl font-bold text-green-300">${hasData ? regularTopicCount : 'N/A'}</div>
+                <div class="text-xs text-green-200 mt-1">Regular Topics</div>
+            </div>
+            <div class="bg-purple-900 bg-opacity-50 rounded p-3 text-center border border-purple-500">
+                <div class="text-2xl font-bold text-purple-300">${hasData ? retainedCount : 'N/A'}</div>
+                <div class="text-xs text-purple-200 mt-1">Retained Messages</div>
+            </div>
+        </div>
+        ${brokerError ? `
+        <div class="bg-yellow-900 bg-opacity-30 border border-yellow-500 rounded p-3 mt-2">
+            <span class="font-semibold text-yellow-300">⚠️ Broker Error:</span>
+            <span class="text-yellow-200 ml-2">${brokerError}</span>
+        </div>` : ''}
+        ${!hasData ? '<div class="text-yellow-400 text-sm mt-2">⚠️ Broker metadata not available. Ensure Flask API is running and collecting $SYS topics.</div>' : ''}
+    </div>`;
+    })()}
+
     ${sensorReadings}
 
     <div class="bg-gray-900 rounded p-4 border-l-4 ${isSecure ? 'border-green-500' : 'border-red-500'}">

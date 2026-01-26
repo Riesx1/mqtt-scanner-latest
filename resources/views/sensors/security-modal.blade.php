@@ -269,6 +269,35 @@ function renderDetailedReport(broker, title) {
                 </div>
             ` : ''}
 
+            <!-- $SYS Topics & Broker Information -->
+            ${broker.sys_topic_count > 0 || broker.regular_topic_count > 0 || broker.retained_count > 0 ? `
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold mb-3">🖥️ BROKER INFORMATION ($SYS TOPICS)</h4>
+                    <div class="bg-gray-50 rounded p-4 space-y-3">
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="bg-blue-100 rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-blue-800">${broker.sys_topic_count || 0}</div>
+                                <div class="text-xs text-blue-600">$SYS Topics</div>
+                            </div>
+                            <div class="bg-green-100 rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-green-800">${broker.regular_topic_count || 0}</div>
+                                <div class="text-xs text-green-600">Regular Topics</div>
+                            </div>
+                            <div class="bg-purple-100 rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-purple-800">${broker.retained_count || 0}</div>
+                                <div class="text-xs text-purple-600">Retained Messages</div>
+                            </div>
+                        </div>
+                        ${broker.broker_error ? `
+                            <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                                <span class="font-semibold text-yellow-800">⚠️ Broker Error:</span>
+                                <span class="text-yellow-700">${broker.broker_error}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            ` : ''}
+
             <!-- Active Topics -->
             ${broker.topic_count > 0 ? `
                 <div class="mb-6">

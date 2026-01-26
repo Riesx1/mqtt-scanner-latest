@@ -1256,7 +1256,7 @@ def run_scan(target: str) -> dict:
         target: IP address, hostname, or CIDR network range
 
     Returns:
-        Dictionary with structure:
+        Dictionary with comprehensive structure:
         {
             'scan_timestamp': ISO8601 timestamp,
             'target': target specification,
@@ -1265,11 +1265,78 @@ def run_scan(target: str) -> dict:
                 {
                     'ip_address': str,
                     'port': int,
-                    'outcome': str,
-                    'severity': str,
+                    'protocol': str,  # MQTT protocol version (v3.1.1)
+                    'transport': str,  # TLS/SSL Encrypted or Plaintext
+                    'sensor_type': str,  # DHT, LDR, PIR identification
+                    'connection_status': str,  # connected, refused, timeout
+                    'classification': str,  # open_or_auth_ok, requires_auth, etc.
+                    'scan_timestamp': str,  # Scan execution time
+                    'response_time': int,  # Latency in milliseconds
+
+                    # Network Details Section
+                    'endpoint': str,  # IP:Port combination
+                    'topic': str,  # Active topic (e.g., sensors/faris/dht_secure)
+                    'qos_level': int,  # Quality of Service (0, 1, or 2)
+                    'keep_alive': int,  # Keep-alive interval in seconds
+                    'clean_session': bool,  # Clean session flag
+                    'message_retained': bool,  # Message retention status
+
+                    # Sensor Readings (when applicable)
+                    'sensor_data': {
+                        'temperature': float,  # Temperature in Celsius
+                        'humidity': float,  # Humidity percentage
+                        'light_pct': float,  # Light percentage
+                        'motion': bool  # Motion detection state
+                    },
+
+                    # Security Assessment Section
+                    'risk_level': str,  # LOW, MEDIUM, HIGH, CRITICAL
+                    'security_issues_found': int,  # Count of issues detected
+                    'recommendations': list,  # Security recommendations
+
+                    # Access Control & Authentication
+                    'anonymous_access': bool,  # Disabled or Enabled
+                    'authentication_required': bool,  # Required or Optional
+                    'auth_method': str,  # Username/Password, Certificate, None
+                    'credentials_used': str,  # Email format or username
+                    'port_type': str,  # Secure (TLS) or Plain TCP
+                    'encryption': str,  # AES-256-GCM, AES-128-CBC, None
+                    'data_integrity': str,  # Protected or Unprotected
+
+                    # TLS/SSL Certificate Analysis (for encrypted connections)
+                    'certificate_info': {
+                        'security_score': int,  # 0-100 security rating
+                        'common_name': str,  # Certificate CN
+                        'organization': str,  # Issuing organization
+                        'country': str,  # Country code
+                        'state': str,  # State/province
+                        'valid_from': str,  # Certificate start date
+                        'valid_to': str,  # Certificate expiration date
+                        'self_signed': bool,  # Self-signed indicator
+                        'certificate_valid': str,  # Valid, Invalid, Expired
+                        'tls_version': str  # TLS 1.2+, TLS 1.3
+                    },
+
+                    # Detected Publisher Information
+                    'publishers': [
+                        {
+                            'topic': str,  # Topic hierarchy path
+                            'message_count': int,  # Number of messages
+                            'retained': bool,  # Retained message flag
+                            'payload_sample': str,  # First 500 chars of payload
+                            'payload_structure': dict  # JSON payload structure
+                        }
+                    ],
+
+                    # Scan Outcome Analysis
+                    'outcome': str,  # Connected (8883), Connected (1883), etc.
+                    'security_implication': str,  # Detailed interpretation
+                    'risk_context': str,  # Executive-level summary
+
+                    'severity': str,  # CRITICAL, HIGH, MEDIUM, LOW
                     'tls_enabled': bool,
                     'auth_required': bool,
-                    'details': str
+                    'details': str  # Human-readable summary
                 }
             ]
         }
@@ -1291,7 +1358,21 @@ def run_scan(target: str) -> dict:
     }
 ```
 
-The structured output format in Listing 4.5 enables seamless database persistence and supports future API versioning through explicit schema definition.
+The enhanced structured output format in Listing 4.5 provides comprehensive security intelligence beyond basic connectivity testing. The multi-dimensional result structure supports:
+
+1. **Operational Context**: Protocol version, transport security, sensor type identification, and network configuration details enable administrators to understand device purpose and communication patterns.
+
+2. **Security Posture Assessment**: Risk level classification, vulnerability enumeration, and actionable recommendations translate technical findings into business-impact language suitable for non-technical stakeholders.
+
+3. **Authentication Analysis**: Granular authentication status (anonymous access, authentication methods, credential formats) and encryption strength assessment (cipher suites, TLS versions) support compliance reporting requirements.
+
+4. **Certificate Validation**: Comprehensive SSL/TLS certificate analysis including validity periods, issuer verification, self-signed detection, and security scoring enables identification of certificate-related vulnerabilities before exploitation.
+
+5. **Publisher Detection**: Active topic monitoring with message counting and payload sampling reveals unauthorized publishers or data exfiltration attempts through unexpected topics.
+
+6. **Performance Metrics**: Response time tracking and connection status monitoring support network troubleshooting and performance optimization initiatives.
+
+The structured schema enables seamless database persistence through JSON serialization, supports future API versioning without breaking backward compatibility, and facilitates integration with Security Information and Event Management (SIEM) systems through standardized field naming conventions. This comprehensive output structure forms the foundation for the detailed security report modal interface documented in Section 4.4.1.6.
 
 #### 4.4.1.6 User Interface Implementation
 
@@ -1332,6 +1413,94 @@ The web dashboard implements responsive design using Tailwind CSS 4.0 framework.
 ```
 
 As depicted in Figure 4.5, the interface prioritizes usability through clear visual hierarchy: primary action (scan initiation) positioned at top, results table implements severity color coding (red for Critical, yellow for Medium), and historical summary provides context for longitudinal analysis. The implementation utilizes AJAX (Asynchronous JavaScript and XML) for non-blocking result updates, preventing full page reloads and maintaining responsive user experience during scan execution.
+
+#### 4.4.1.6 Detailed Security Report Modal
+
+The web dashboard implements a comprehensive modal-based detailed security report view accessible by clicking individual scan results. Figure 4.12 illustrates the complete information hierarchy presented to security analysts.
+
+**Figure 4.12: Detailed Security Report Interface Showing Comprehensive Broker Analysis**
+
+The detailed security report modal presents information organized into eight distinct analytical sections:
+
+1. **Target Information Section**
+    - IP address and port identification
+    - MQTT protocol version detection (v3.1.1)
+    - Transport layer status (TLS/SSL Encrypted or Plaintext)
+    - Sensor type classification (DHT - Temperature & Humidity, LDR - Light, PIR - Motion)
+    - Connection status verification
+    - Security classification (open_or_auth_ok, requires_auth, anonymous_allowed)
+    - Scan execution timestamp with response latency measurement
+
+2. **Network Details Section**
+    - Complete broker endpoint (IP:Port combination)
+    - Active topic subscription patterns (e.g., `sensors/faris/dht_secure`)
+    - Quality of Service (QoS) level negotiation results
+    - Keep-alive interval configuration (60 seconds standard)
+    - Clean session flag status
+    - Message retention policy detection
+
+3. **Current Sensor Readings Section** (when applicable)
+    - Real-time temperature measurements (°C)
+    - Humidity percentage readings
+    - Additional sensor data as available
+    - Provides immediate operational context for detected IoT devices
+
+4. **Security Assessment Section**
+    - Risk level classification with color-coded severity indicators
+        - LOW (Green): Properly configured with authentication and encryption
+        - MEDIUM (Yellow): Partial security controls implemented
+        - HIGH (Orange): Significant vulnerabilities detected
+        - CRITICAL (Red): Anonymous access or missing encryption
+    - Enumerated security issues discovered during scanning
+    - Actionable recommendations for security remediation
+    - Vulnerability count summary (e.g., "2 active topics detected")
+
+5. **Access Control & Authentication Section**
+    - Anonymous access status (Enabled ✗ / Disabled ✓)
+    - Authentication requirement verification (Required ✓ / Optional ✗)
+    - Authentication method employed (Username/Password, Certificate-based, None)
+    - Credentials format detection (email-based identifiers vs. username-only)
+    - Port type classification (Secure TLS vs. Plain TCP)
+    - Encryption algorithm identification (AES-256-GCM, AES-128-CBC)
+    - Data integrity protection status (Protected ✓ / Unprotected ✗)
+
+6. **TLS/SSL Certificate Analysis Section** (for encrypted connections)
+    - Overall security score (0-100 scale with color-coded indicators)
+    - Certificate common name (CN) extraction
+    - Issuing organization identification
+    - Country of issuance
+    - State/province information
+    - Validity period analysis
+        - Valid From: Certificate issuance date
+        - Valid To: Certificate expiration date
+        - Expiration warning if within 30 days
+    - Self-signed certificate detection with warning indicators
+    - Certificate validation status (Valid ✓ / Invalid ✗ / Expired ⚠)
+    - TLS protocol version enforcement (TLS 1.2+ recommended)
+
+7. **Detected Publisher Section**
+    - Active topic enumeration with full topic hierarchy paths
+    - Message count tracking per topic
+    - Retained message flag identification
+    - Sample payload display (first 500 characters)
+    - JSON payload structure visualization
+    - Publisher client identification (where MQTT protocol permits)
+    - Publishing frequency analysis
+
+8. **Scan Outcome Analysis Section**
+    - Connection outcome classification
+        - Connected (8883): Successful TLS-encrypted connection established
+        - Connected (1883): Plaintext connection established (security warning)
+        - Connection Refused: Authentication failure or broker offline
+        - Timeout: Network unreachability or firewall blocking
+    - Security implication interpretation
+        - "Broker accepts connection over TLS" - Positive security indicator
+        - "Potentially safer, must still verify certificate and auth" - Recommendation for further validation
+    - Risk contextualization for executive reporting
+
+The detailed report interface implements responsive design principles ensuring readability across desktop, tablet, and mobile form factors. Color-coded severity indicators (traffic light system) enable rapid visual assessment without requiring detailed technical analysis. The implementation utilizes Bootstrap modal components with custom CSS styling for consistent visual hierarchy and information architecture.
+
+Figure 4.12 demonstrates the system's capability to transform raw scanning data into actionable security intelligence, bridging the gap between technical vulnerability detection and practical remediation guidance suitable for both security specialists and operational staff with limited cybersecurity expertise.
 
 ### 4.4.2 Version 2.1: Docker-Based Test Infrastructure
 

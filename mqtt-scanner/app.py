@@ -491,10 +491,20 @@ def api_scan():
         elapsed_time = time.time() - start_time
         app.logger.info(f"Scan and processing for target '{target}' completed in {elapsed_time:.2f} seconds.")
 
+        # Flatten broker_info fields to top level for easier access
+        for r in enriched_results:
+            broker_info = r.get('broker_info', {})
+            if broker_info:
+                r['sys_topic_count'] = broker_info.get('sys_count', 0)
+                r['regular_topic_count'] = broker_info.get('regular_count', 0)
+                r['retained_count'] = len(broker_info.get('retained_topics', []))
+                r['broker_error'] = broker_info.get('error')
+
         # DEBUG: Log what we're about to send to browser
         app.logger.info(f"About to send {len(enriched_results)} results to browser")
         for r in enriched_results[:1]:  # Log first result only
             app.logger.info(f"Sample result keys: {r.keys()}")
+            app.logger.info(f"Sample result sys_topic_count: {r.get('sys_topic_count', 'MISSING')}")
             if r.get('publishers'):
                 app.logger.info(f"Sample result publishers[0] keys: {r['publishers'][0].keys()}")
                 app.logger.info(f"Sample result publishers[0] payload: {r['publishers'][0].get('payload', 'MISSING')[:50]}")

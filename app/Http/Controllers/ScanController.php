@@ -49,7 +49,7 @@ class ScanController extends Controller
 
             // Use MqttSensorService for direct MQTT scanning
             $sensorService = new MqttSensorService();
-            
+
             // Set credentials if provided, otherwise use null for anonymous
             if (isset($validated['creds']) && !empty($validated['creds']['user'])) {
                 $sensorService->setCredentials(
@@ -128,10 +128,13 @@ class ScanController extends Controller
                 }
             }
 
+            // Get broker metadata from Flask if available
+            $brokerInfo = $this->getBrokerInfoFromFlask('127.0.0.1', 8883, true, ['user' => 'mqtt@example.com', 'pass' => 'mqtt123']);
+
             // Create separate entries for each unique sensor topic on secure broker
             foreach ($secureTopicsMap as $topicData) {
                 $sensorType = $this->identifySensorType($topicData['topic'], $topicData['message']);
-                
+
                 $results[] = [
                     'ip' => '127.0.0.1',
                     'port' => 8883,
@@ -145,17 +148,24 @@ class ScanController extends Controller
                         'certificate' => 'Self-signed CA',
                         'authentication' => 'Username/Password (mqtt@example.com)'
                     ],
-                    'publishers' => [[
-                        'topic' => $topicData['topic'],
-                        'publisher' => $topicData['publisher'],
-                        'payload_sample' => json_encode($topicData['message'])
-                    ]],
-                    'subscribers' => [[
-                        'client' => $topicData['subscriber'],
-                        'subscribed_to' => $topicData['topic']
-                    ]],
+                    'publishers' => [
+                        [
+                            'topic' => $topicData['topic'],
+                            'publisher' => $topicData['publisher'],
+                            'payload_sample' => json_encode($topicData['message'])
+                        ]
+                    ],
+                    'subscribers' => [
+                        [
+                            'client' => $topicData['subscriber'],
+                            'subscribed_to' => $topicData['topic']
+                        ]
+                    ],
                     'sensor_type' => $sensorType['type'],
                     'sensor_data' => $sensorType['data'],
+                    'sys_topic_count' => $brokerInfo['sys_topic_count'] ?? 0,
+                    'regular_topic_count' => $brokerInfo['regular_topic_count'] ?? 0,
+                    'retained_count' => $brokerInfo['retained_count'] ?? 0,
                     'timestamp' => now()->toIso8601String()
                 ];
             }
@@ -178,10 +188,13 @@ class ScanController extends Controller
                 }
             }
 
+            // Get broker metadata from Flask
+            $brokerInfo = $this->getBrokerInfoFromFlask('127.0.0.1', 1883, false, null);
+
             // Create entries for each unique insecure broker sensor
             foreach ($insecureTopicsMap as $topicData) {
                 $sensorType = $this->identifySensorType($topicData['topic'], $topicData['message']);
-                
+
                 $results[] = [
                     'ip' => '127.0.0.1',
                     'port' => 1883,
@@ -194,23 +207,88 @@ class ScanController extends Controller
                         'encryption' => 'Plain text (unencrypted)',
                         'warning' => 'Data transmitted in plain text - not secure!'
                     ],
-                    'publishers' => [[
-                        'topic' => $topicData['topic'],
-                        'publisher' => $topicData['publisher'],
-                        'payload_sample' => json_encode($topicData['message'])
-                    ]],
-                    'subscribers' => [[
-                        'client' => $topicData['subscriber'],
-                        'subscribed_to' => $topicData['topic']
-                    ]],
+                    'publishers' => [
+                        [
+                            'topic' => $topicData['topic'],
+                            'publisher' => $topicData['publisher'],
+                            'payload_sample' => json_encode($topicData['message'])
+                        ]
+                    ],
+                    'subscribers' => [
+                        [
+                            'client' => $topicData['subscriber'],
+                            'subscribed_to' => $topicData['topic']
+                        ]
+                    ],
                     'sensor_type' => $sensorType['type'],
                     'sensor_data' => $sensorType['data'],
+                    'sys_topic_count' => $brokerInfo['sys_topic_count'] ?? 0,
+                    'regular_topic_count' => $brokerInfo['regular_topic_count'] ?? 0,
+                    'retained_count' => $brokerInfo['retained_count'] ?? 0,
                     'timestamp' => now()->toIso8601String()
                 ];
             }
         }
 
         return $results;
+    }
+
+    /**
+     * Get broker metadata ($SYS topics, regular topics, retained messages) from Flask
+     */
+    private function getBrokerInfoFromFlask($host, $port, $useTls, $creds)
+    {
+        try {
+            Log::info('Fetching broker info from Flask', [
+                'host' => $host,
+                'port' => $port,
+                'use_tls' => $useTls,
+                'has_creds' => !empty($creds)
+            ]);
+
+            $response = Http::withHeaders([
+                'X-API-Key' => $this->apiKey
+            ])->timeout(30)->post($this->scannerApiUrl . '/api/scan', [
+                        'target' => "{$host}:{$port}",
+                        'listen_duration' => 3,
+                        'capture_all_topics' => false, // Only get $SYS topics
+                        'creds' => $creds
+                    ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $results = $data['results'] ?? [];
+
+                if (!empty($results)) {
+                    $firstResult = $results[0];
+                    $brokerInfo = [
+                        'sys_topic_count' => $firstResult['sys_topic_count'] ?? 0,
+                        'regular_topic_count' => $firstResult['regular_topic_count'] ?? 0,
+                        'retained_count' => $firstResult['retained_count'] ?? 0
+                    ];
+                    Log::info('Flask broker info retrieved', $brokerInfo);
+                    return $brokerInfo;
+                }
+            } else {
+                Log::warning('Flask API returned non-successful status', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+            }
+
+            return [
+                'sys_topic_count' => 0,
+                'regular_topic_count' => 0,
+                'retained_count' => 0
+            ];
+        } catch (\Exception $e) {
+            Log::error('Failed to get broker info from Flask: ' . $e->getMessage());
+            return [
+                'sys_topic_count' => 0,
+                'regular_topic_count' => 0,
+                'retained_count' => 0
+            ];
+        }
     }
 
     /**
@@ -230,7 +308,7 @@ class ScanController extends Controller
                 ]
             ];
         }
-        
+
         // LDR sensor (light)
         if (strpos($topic, 'ldr') !== false || isset($message['ldr_pct'])) {
             return [
@@ -242,7 +320,7 @@ class ScanController extends Controller
                 ]
             ];
         }
-        
+
         // PIR sensor (motion)
         if (strpos($topic, 'pir') !== false || isset($message['pir'])) {
             $pirValue = $message['pir'] ?? 0;
