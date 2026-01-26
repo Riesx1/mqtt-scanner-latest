@@ -4,9 +4,9 @@
 
 All services are **RUNNING**:
 
--   ✅ Docker: mosq_insecure (port 1883) + mosq_secure (port 8883)
--   ✅ Flask API: http://127.0.0.1:5000
--   ✅ Laravel Dashboard: http://127.0.0.1:8000
+- ✅ Docker: mosq_insecure (port 1883) + mosq_secure (port 8883)
+- ✅ Flask API: http://127.0.0.1:5000
+- ✅ Laravel Dashboard: http://127.0.0.1:8000
 
 ## Step 1: Test ESP32 Sensors (2 minutes)
 
@@ -20,13 +20,13 @@ python test_esp32_sensors.py
 ### ✅ Expected Output:
 
 ```
-[01:45:03] 🔒 SECURE - sensors/faris/dht_secure
+[01:45:03] 🔒 SECURE - sensors/[USERNAME]/dht_secure
   🌡️ Temp: 31.8°C, Humidity: 64.0%
 
-[01:45:03] 🔒 SECURE - sensors/faris/ldr_secure
+[01:45:03] 🔒 SECURE - sensors/[USERNAME]/ldr_secure
   💡 Light: 47.3% (Raw: 1938)
 
-[01:45:03] ⚠️ INSECURE - sensors/faris/pir_insecure
+[01:45:03] ⚠️ INSECURE - sensors/[USERNAME]/pir_insecure
   👁️ Motion: DETECTED ⚠️
 ```
 
@@ -50,7 +50,7 @@ VERIFICATION:
     ```
 3. **Verify IP address** in esp32_mixed_security.ino:
     - WiFi IP should match your network
-    - MQTT server should be `192.168.100.56`
+    - MQTT server should be `XXX.XXX.X.X`
 
 ---
 
@@ -63,10 +63,9 @@ VERIFICATION:
 3. **Go to Dashboard** (you should already be there)
 
 4. **Fill in the scan form**:
-
-    - Target: `192.168.100.56`
-    - Username: `testuser`
-    - Password: `testpass`
+    - Target: `XXX.XXX.X.X`
+    - Username: `[USERNAME]`
+    - Password: `[PASSWORD]`
 
 5. **Click "Start Scan"**
 
@@ -86,35 +85,35 @@ You should see **2-3 rows** showing:
 
 #### Row 1: DHT Sensor (Secure)
 
--   **IP**: 192.168.100.56
--   **Port**: 8883
--   **Security**: 🔒 Secure (TLS)
--   **Sensor Type**: 🌡️ DHT
--   **Publisher**: sensors/faris/dht_secure
--   **Sensor Data**:
-    -   Temp: 31.8°C
-    -   Humidity: 64.0%
--   **TLS Details**: TLS 1.2+, Self-signed cert
+- **IP**: XXX.XXX.XXX.XX
+- **Port**: 8883
+- **Security**: 🔒 Secure (TLS)
+- **Sensor Type**: 🌡️ DHT
+- **Publisher**: sensors/[USERNAME]/dht_secure
+- **Sensor Data**:
+    - Temp: 31.8°C
+    - Humidity: 64.0%
+- **TLS Details**: TLS 1.2+, Self-signed cert
 
 #### Row 2: LDR Sensor (Secure)
 
--   **IP**: 192.168.100.56
--   **Port**: 8883
--   **Security**: 🔒 Secure (TLS)
--   **Sensor Type**: 💡 LDR
--   **Publisher**: sensors/faris/ldr_secure
--   **Sensor Data**: Light: 47.3%
--   **TLS Details**: TLS 1.2+, Self-signed cert
+- **IP**: XXX.XXX.XXX.XX
+- **Port**: 8883
+- **Security**: 🔒 Secure (TLS)
+- **Sensor Type**: 💡 LDR
+- **Publisher**: sensors/[USERNAME]/ldr_secure
+- **Sensor Data**: Light: 47.3%
+- **TLS Details**: TLS 1.2+, Self-signed cert
 
 #### Row 3: PIR Sensor (Insecure)
 
--   **IP**: 192.168.100.56
--   **Port**: 1883
--   **Security**: ⚠️ Insecure
--   **Sensor Type**: 👁️ PIR
--   **Publisher**: sensors/faris/pir_insecure
--   **Sensor Data**: Motion: DETECTED (or "No Motion")
--   **TLS Details**: ⚠️ Unencrypted
+- **IP**: XXX.XXX.XXX.XX
+- **Port**: 1883
+- **Security**: ⚠️ Insecure
+- **Sensor Type**: 👁️ PIR
+- **Publisher**: sensors/[USERNAME]/pir_insecure
+- **Sensor Data**: Motion: DETECTED (or "No Motion")
+- **TLS Details**: ⚠️ Unencrypted
 
 ### Summary Cards Should Show:
 
@@ -129,12 +128,12 @@ You should see **2-3 rows** showing:
 
 ## ✅ Success Criteria
 
--   [ ] test_esp32_sensors.py shows all 3 sensors
--   [ ] Dashboard scan completes without errors
--   [ ] See 2 secure sensors (DHT + LDR) on port 8883
--   [ ] See 1 insecure sensor (PIR) on port 1883
--   [ ] Sensor data shows actual values (not "N/A")
--   [ ] Can export CSV with results
+- [ ] test_esp32_sensors.py shows all 3 sensors
+- [ ] Dashboard scan completes without errors
+- [ ] See 2 secure sensors (DHT + LDR) on port 8883
+- [ ] See 1 insecure sensor (PIR) on port 1883
+- [ ] Sensor data shows actual values (not "N/A")
+- [ ] Can export CSV with results
 
 ---
 
@@ -144,17 +143,17 @@ You should see **2-3 rows** showing:
 
 **Solution**: Increase listen duration
 
--   The scanner listens for 5 seconds by default
--   If ESP32 publishes every 3 seconds, you might miss it
--   Try scanning again (ESP32 uses retained messages, so it should work)
+- The scanner listens for 5 seconds by default
+- If ESP32 publishes every 3 seconds, you might miss it
+- Try scanning again (ESP32 uses retained messages, so it should work)
 
 ### Problem: Port 8883 shows "Not Authorized"
 
 **Solution**: Check credentials
 
--   Make sure Username = `testuser`
--   Make sure Password = `testpass`
--   These are case-sensitive
+- Make sure Username = `[USERNAME]`
+- Make sure Password = `[PASSWORD]`
+- These are case-sensitive
 
 ### Problem: Port 1883 shows "Closed/Unreachable"
 
@@ -207,13 +206,11 @@ If everything works:
 ## 💡 Pro Tips
 
 1. **Retained Messages**: Your ESP32 uses `retained=true`, which means:
-
     - Last message is stored by the broker
     - Scanner will see it immediately
     - Even if ESP32 is offline!
 
 2. **Real-time Data**: To see live updates:
-
     - Keep scanning every 30 seconds
     - Or modify dashboard.blade.php to auto-refresh
 
@@ -253,11 +250,11 @@ If everything works:
 
 After running the test, your dashboard should clearly show:
 
--   ✅ **2 Secure connections** (port 8883 with TLS)
--   ✅ **1 Insecure connection** (port 1883 plain text)
--   ✅ **3 Sensor types** (DHT, LDR, PIR)
--   ✅ **Real sensor data** with actual values
--   ✅ **Security warnings** for insecure connection
+- ✅ **2 Secure connections** (port 8883 with TLS)
+- ✅ **1 Insecure connection** (port 1883 plain text)
+- ✅ **3 Sensor types** (DHT, LDR, PIR)
+- ✅ **Real sensor data** with actual values
+- ✅ **Security warnings** for insecure connection
 
 This demonstrates your **Mixed Security MQTT Scanner** working correctly!
 

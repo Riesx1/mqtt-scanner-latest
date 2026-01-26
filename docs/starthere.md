@@ -19,9 +19,9 @@ Before starting, make sure you have installed:
 
 ### 1. **Docker Desktop**
 
--   Download from: https://www.docker.com/products/docker-desktop
--   Install and start Docker Desktop
--   Verify installation: Open terminal/command prompt and run:
+- Download from: https://www.docker.com/products/docker-desktop
+- Install and start Docker Desktop
+- Verify installation: Open terminal/command prompt and run:
     ```bash
     docker --version
     docker compose version
@@ -29,20 +29,20 @@ Before starting, make sure you have installed:
 
 ### 2. **Arduino IDE**
 
--   Download from: https://www.arduino.cc/en/software
--   Install Arduino IDE
--   Install required libraries (explained in [ESP32 Setup](#esp32-setup-hardware))
+- Download from: https://www.arduino.cc/en/software
+- Install Arduino IDE
+- Install required libraries (explained in [ESP32 Setup](#esp32-setup-hardware))
 
 ### 3. **PHP & Composer** (for Laravel)
 
--   PHP 8.2 or higher
--   Composer (PHP package manager)
--   Download from: https://getcomposer.org/download/
+- PHP 8.2 or higher
+- Composer (PHP package manager)
+- Download from: https://getcomposer.org/download/
 
 ### 4. **Node.js** (for frontend assets)
 
--   Download from: https://nodejs.org/
--   Version 18 or higher recommended
+- Download from: https://nodejs.org/
+- Version 18 or higher recommended
 
 ---
 
@@ -96,12 +96,12 @@ MQTT_SECURE_PORT=8883
 
 ### Hardware Requirements:
 
--   **ESP32 Development Board**
--   **DHT11 Temperature & Humidity Sensor**
--   **LDR (Light Dependent Resistor)** + 10kΩ resistor
--   **PIR Motion Sensor (HC-SR501)**
--   Jumper wires
--   Breadboard
+- **ESP32 Development Board**
+- **DHT11 Temperature & Humidity Sensor**
+- **LDR (Light Dependent Resistor)** + 10kΩ resistor
+- **PIR Motion Sensor (HC-SR501)**
+- Jumper wires
+- Breadboard
 
 ### Wiring Diagram:
 
@@ -127,7 +127,6 @@ ESP32 Pin Connections:
 1. **Open Arduino IDE**
 
 2. **Install ESP32 Board Support:**
-
     - Go to: `File → Preferences`
     - Add this URL to "Additional Board Manager URLs":
         ```
@@ -137,7 +136,6 @@ ESP32 Pin Connections:
     - Search for "esp32" and install "ESP32 by Espressif Systems"
 
 3. **Install Required Libraries:**
-
     - Go to: `Sketch → Include Library → Manage Libraries`
     - Install these libraries:
         - **DHT sensor library** by Adafruit
@@ -145,7 +143,6 @@ ESP32 Pin Connections:
         - **PubSubClient** by Nick O'Leary
 
 4. **Open ESP32 Code:**
-
     - Open file: `esp32_mixed_security.ino`
 
 5. **Configure WiFi and MQTT Settings:**
@@ -162,21 +159,19 @@ ESP32 Pin Connections:
     const char* password = "YOUR_WIFI_PASSWORD";  // ← Change to your WiFi password
 
     // MQTT Broker Settings
-    const char* mqtt_server = "192.168.1.100";    // ← Change to your computer's IP address
+    const char* mqtt_server = "XXX.XXX.X.XXX";    // ← Change to your computer's IP address
 
     // MQTT Credentials (for secure broker only)
-    const char* mqtt_user = "testuser";           // Keep as is (default username)
-    const char* mqtt_password = "testpass";       // Keep as is (default password)
+    const char* mqtt_user = "[USERNAME]";         // Keep as is (default username)
+    const char* mqtt_password = "[PASSWORD]";     // Keep as is (default password)
     ```
 
     **How to find your computer's IP address:**
-
     - **Windows:** Open Command Prompt and type `ipconfig`, look for "IPv4 Address"
     - **Mac:** Open Terminal and type `ifconfig | grep inet`, look for your local IP
     - **Linux:** Open Terminal and type `hostname -I`
 
 6. **Upload to ESP32:**
-
     - Connect ESP32 to your computer via USB
     - Select board: `Tools → Board → ESP32 Dev Module`
     - Select port: `Tools → Port → (select your ESP32 port)`
@@ -190,7 +185,7 @@ ESP32 Pin Connections:
         ```
         Connecting to WiFi...
         WiFi connected!
-        IP address: 192.168.x.x
+        IP address: XXX.XXX.X.X
         Connected to MQTT (Secure)
         Connected to MQTT (Insecure)
         Publishing sensor data...
@@ -216,8 +211,8 @@ docker compose up -d
 
 This will start:
 
--   **Insecure MQTT Broker** on port `1883` (for PIR motion sensor)
--   **Secure MQTT Broker** on port `8883` (for DHT11 and LDR sensors)
+- **Insecure MQTT Broker** on port `1883` (for PIR motion sensor)
+- **Secure MQTT Broker** on port `8883` (for DHT11 and LDR sensors)
 
 ### Step 3: Verify Brokers are Running
 
@@ -227,8 +222,8 @@ docker compose ps
 
 You should see two containers running:
 
--   `mqtt-brokers-insecure-1`
--   `mqtt-brokers-secure-1`
+- `mqtt-brokers-insecure-1`
+- `mqtt-brokers-secure-1`
 
 ### To Stop Brokers (when needed):
 
@@ -293,15 +288,15 @@ After registration, you'll be redirected to the dashboard automatically.
     - **Broker IP:** `127.0.0.1` (or your computer's IP)
     - **Insecure Port:** `1883`
     - **Secure Port:** `8883`
-    - **Username:** `testuser`
-    - **Password:** `testpass`
+    - **Username:** `[USERNAME]`
+    - **Password:** `[PASSWORD]`
 3. Click **"Scan Network"**
 
 **Expected Result:** You should see **3 sensors**:
 
--   ✅ DHT11 (Secure) - Temperature & Humidity
--   ✅ LDR (Secure) - Light Sensor
--   ✅ PIR (Insecure) - Motion Sensor
+- ✅ DHT11 (Secure) - Temperature & Humidity
+- ✅ LDR (Secure) - Light Sensor
+- ✅ PIR (Insecure) - Motion Sensor
 
 ### Test 2: Scan Only Insecure Sensors (Without Credentials)
 
@@ -310,7 +305,7 @@ After registration, you'll be redirected to the dashboard automatically.
 
 **Expected Result:** You should see **only 1 sensor**:
 
--   ✅ PIR (Insecure) - Motion Sensor
+- ✅ PIR (Insecure) - Motion Sensor
 
 (DHT11 and LDR won't appear because they require authentication)
 
@@ -345,9 +340,9 @@ After registration, you'll be redirected to the dashboard automatically.
 
 ### Topics Published by ESP32:
 
--   `sensors/faris/dht_secure` - Temperature & humidity data (secure)
--   `sensors/faris/ldr_secure` - Light sensor data (secure)
--   `sensors/faris/pir_insecure` - Motion detection (insecure)
+- `sensors/[USERNAME]/dht_secure` - Temperature & humidity data (secure)
+- `sensors/[USERNAME]/ldr_secure` - Light sensor data (secure)
+- `sensors/[USERNAME]/pir_insecure` - Motion detection (insecure)
 
 ### Data Format:
 
@@ -483,18 +478,18 @@ If you encounter any issues not covered in this guide:
 
 ## 🎉 Success Checklist
 
--   ✅ Docker Desktop installed and running
--   ✅ Arduino IDE installed with ESP32 support
--   ✅ Libraries installed (DHT, PubSubClient)
--   ✅ ESP32 code uploaded with correct WiFi/IP settings
--   ✅ MQTT brokers running in Docker
--   ✅ Laravel server running
--   ✅ Can access http://127.0.0.1:8000
--   ✅ Successfully registered and logged in
--   ✅ Scan shows 3 sensors with credentials
--   ✅ Scan shows 1 sensor without credentials
--   ✅ Details modal shows security information
--   ✅ CSV export works
+- ✅ Docker Desktop installed and running
+- ✅ Arduino IDE installed with ESP32 support
+- ✅ Libraries installed (DHT, PubSubClient)
+- ✅ ESP32 code uploaded with correct WiFi/IP settings
+- ✅ MQTT brokers running in Docker
+- ✅ Laravel server running
+- ✅ Can access http://127.0.0.1:8000
+- ✅ Successfully registered and logged in
+- ✅ Scan shows 3 sensors with credentials
+- ✅ Scan shows 1 sensor without credentials
+- ✅ Details modal shows security information
+- ✅ CSV export works
 
 ---
 
@@ -502,22 +497,22 @@ If you encounter any issues not covered in this guide:
 
 ### Default Credentials:
 
--   **MQTT Secure Broker:**
-    -   Username: `testuser`
-    -   Password: `testpass`
+- **MQTT Secure Broker:**
+    - Username: `[USERNAME]`
+    - Password: `[PASSWORD]`
 
 ### Ports Used:
 
--   `1883` - Insecure MQTT Broker
--   `8883` - Secure MQTT Broker (TLS)
--   `8000` - Laravel Web Application
+- `1883` - Insecure MQTT Broker
+- `8883` - Secure MQTT Broker (TLS)
+- `8000` - Laravel Web Application
 
 ### System Requirements:
 
--   **RAM:** Minimum 4GB (8GB recommended)
--   **Storage:** 2GB free space
--   **OS:** Windows 10/11, macOS 10.15+, or Linux
--   **Network:** Local WiFi network (2.4GHz for ESP32)
+- **RAM:** Minimum 4GB (8GB recommended)
+- **Storage:** 2GB free space
+- **OS:** Windows 10/11, macOS 10.15+, or Linux
+- **Network:** Local WiFi network (2.4GHz for ESP32)
 
 ---
 
